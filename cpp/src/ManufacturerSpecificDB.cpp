@@ -109,6 +109,13 @@ namespace OpenZWave
 				char const *str = root->Value();
 				if (str && !strcmp(str, "Product"))
 				{
+					str = root->Attribute("xmlns");
+					if (str && strcmp(str, "https://github.com/OpenZWave/open-zwave"))
+					{
+						Log::Write(LogLevel_Info, "Product Config File % has incorrect xml Namespace", path.c_str());
+						delete pDoc;
+						return;
+					}
 					// Read in the revision attributes
 					str = root->Attribute("Revision");
 					if (!str)
@@ -272,7 +279,6 @@ namespace OpenZWave
 				map<int64, std::shared_ptr<ProductDescriptor> >::iterator pit = s_productMap.begin();
 				while (!s_productMap.empty())
 				{
-					pit->second->Release();
 					s_productMap.erase(pit);
 					pit = s_productMap.begin();
 				}

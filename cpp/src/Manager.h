@@ -366,11 +366,8 @@ namespace OpenZWave
 		private:
 			Driver* GetDriver(uint32 const _homeId); /**< Get a pointer to a Driver object from the HomeID.  Only to be used by OpenZWave. */
 			void SetDriverReady(Driver* _driver, bool success); /**< Indicate that the Driver is ready to be used, and send the notification callback. */
-
-			OPENZWAVE_EXPORT_WARNINGS_OFF
 			list<Driver*> m_pendingDrivers; /**< Drivers that are in the process of reading saved data and querying their Z-Wave network for basic information. */
 			map<uint32, Driver*> m_readyDrivers; /**< Drivers that are ready to be used by the application. */
-		OPENZWAVE_EXPORT_WARNINGS_ON
 
 		//-----------------------------------------------------------------------------
 		//	Polling Z-Wave devices
@@ -592,8 +589,22 @@ namespace OpenZWave
 			 * \param _homeId The Home ID of the Z-Wave controller that manages the node.
 			 * \param _nodeId The ID of the node to query.
 			 * \param _nodeNeighbors An array of 29 uint8s to hold the neighbor bitmap
+			 * \sa SyncronizeNodeNeighbors
 			 */
 			uint32 GetNodeNeighbors(uint32 const _homeId, uint8 const _nodeId, uint8** _nodeNeighbors);
+
+			/**
+			 * \brief Update the List of Neighbors on a particular node
+			 *
+			 * This retrieves the latest copy of the Neighbor lists for a particular node and should be called
+			 * before calling GetNodeNeighbors to ensure OZW returns the most recent list of Neighbors
+			 *
+			 * \param _homeId The HomeID of the Z-Wave controller than manages the node.
+			 * \param _nodeId The ID of the node to get a updated list of Neighbors from
+			 * \sa GetNodeNeighbors
+			 */
+
+			void SyncronizeNodeNeighbors(uint32 const _homeId, uint8 const _nodeId);
 
 			/**
 			 * \brief Get the manufacturer name of a device
@@ -1054,6 +1065,15 @@ namespace OpenZWave
 			 * \see ValueID
 			 */
 			bool IsValuePolled(ValueID const& _id);
+
+			/**
+			 * \brief Test whether the ValueID is valid.
+			 * \param _id The unique identifier of the value.
+			 * \return true if the valueID is valid, otherwise false.
+			 * \see ValueID
+			 */
+			bool IsValueValid(ValueID const& _id);
+
 
 			/**
 			 * \brief Gets a the value of a Bit from a BitSet ValueID
@@ -1767,10 +1787,8 @@ namespace OpenZWave
 					}
 			};
 
-			OPENZWAVE_EXPORT_WARNINGS_OFF
 			list<Watcher*> m_watchers;							// List of all the registered watchers.
 			list<list<Watcher*>::iterator*> m_watcherIterators;					// Iterators currently operating on the list of watchers
-			OPENZWAVE_EXPORT_WARNINGS_ON
 			Internal::Platform::Mutex* m_notificationMutex;
 
 			//-----------------------------------------------------------------------------

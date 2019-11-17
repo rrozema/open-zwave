@@ -88,8 +88,8 @@ using namespace OpenZWave;
 // 01: 12-31-2010 - Introduced config version numbering due to ValueID format change.
 // 02: 01-12-2011 - Command class m_afterMark sense corrected, and attribute named to match.
 // 03: 08-04-2011 - Changed command class instance handling for non-sequential MultiChannel endpoints.
-//
-uint32 const c_configVersion = 3;
+// 04: 12-07-2019 - Changed Interview Order
+uint32 const c_configVersion = 4;
 
 static char const* c_libraryTypeNames[] =
 { "Unknown",			// library type 0
@@ -611,6 +611,13 @@ bool Driver::ReadCache()
 	}
 	doc.SetUserData((void *) filename.c_str());
 	TiXmlElement const* driverElement = doc.RootElement();
+
+	char const *xmlns = driverElement->Attribute("xmlns");
+	if (strcmp(xmlns, "https://github.com/OpenZWave/open-zwave"))
+	{
+		Log::Write(LogLevel_Warning, "Invalid XML Namespace. Ignoring %s", filename.c_str());
+		return false;
+	}
 
 	// Version
 	if (TIXML_SUCCESS != driverElement->QueryIntAttribute("version", &intVal) || (uint32) intVal != c_configVersion)
@@ -3289,6 +3296,7 @@ void Driver::HandleRemoveNodeFromNetworkRequest(uint8* _data)
 			{
 				m_currentControllerCommand->m_controllerCommandNode = _data[4];
 			}
+			WriteCache();
 			Log::Write(LogLevel_Info, "Removing controller ID %d", m_currentControllerCommand->m_controllerCommandNode);
 			break;
 		}
@@ -3317,6 +3325,7 @@ void Driver::HandleRemoveNodeFromNetworkRequest(uint8* _data)
 						delete m_nodes[m_currentControllerCommand->m_controllerCommandNode];
 						m_nodes[m_currentControllerCommand->m_controllerCommandNode] = NULL;
 					}
+					WriteCache();
 					Notification* notification = new Notification(Notification::Type_NodeRemoved);
 					notification->SetHomeAndNodeIds(m_homeId, m_currentControllerCommand->m_controllerCommandNode);
 					QueueNotification(notification);
@@ -3453,6 +3462,7 @@ void Driver::HandleRemoveFailedNodeRequest(uint8* _data)
 				delete m_nodes[m_currentControllerCommand->m_controllerCommandNode];
 				m_nodes[m_currentControllerCommand->m_controllerCommandNode] = NULL;
 			}
+			WriteCache();
 			Notification* notification = new Notification(Notification::Type_NodeRemoved);
 			notification->SetHomeAndNodeIds(m_homeId, m_currentControllerCommand->m_controllerCommandNode);
 			QueueNotification(notification);
@@ -3502,6 +3512,7 @@ void Driver::HandleReplaceFailedNodeRequest(uint8* _data)
 			{
 				InitNode(m_currentControllerCommand->m_controllerCommandNode, true);
 			}
+			WriteCache();
 			break;
 		}
 		case FAILED_NODE_REPLACE_FAILED:
@@ -4390,6 +4401,8 @@ void Driver::InitNode(uint8 const _nodeId, bool newNode, bool secure, uint8 cons
 		{
 			// Remove the original node
 			delete m_nodes[_nodeId];
+			m_nodes[_nodeId] = NULL;
+			WriteCache();
 			Notification* notification = new Notification(Notification::Type_NodeRemoved);
 			notification->SetHomeAndNodeIds(m_homeId, _nodeId);
 			QueueNotification(notification);
@@ -5386,7 +5399,31 @@ void Driver::UpdateControllerState(ControllerState const _state, ControllerError
 
 		}
 		Notification* notification = new Notification(Notification::Type_ControllerCommand);
-		notification->SetHomeAndNodeIds(m_homeId, 0);
+
+        // PR #1879
+        // The change below sets the nodeId in the notifications for controller state changes. These state changes are
+        // caused by controller commands. Below is a list of controller commands with what the nodeId gets set to,
+        // along with the Manager method(s) that use the controller command.
+
+        // Driver::ControllerCommand_RequestNodeNeighborUpdate: supplied nodeId (Manager::HealNetworkNode, Manager::HealNetwork)
+        // Driver::ControllerCommand_AddDevice: nodeId of an added node (Manager::AddNode)
+        // Driver::ControllerCommand_RemoveDevice: nodeId of a removed node (Manager::RemoveNode)
+        // Driver::ControllerCommand_RemoveFailedNode: supplied nodeId (Manager::RemoveFailedNode)
+        // Driver::ControllerCommand_HasNodeFailed supplied nodeId (Manager::HasNodeFailed)
+        // Driver::ControllerCommand_AssignReturnRoute: supplied nodeId (Manager::AssignReturnRoute)
+        // Driver::ControllerCommand_RequestNodeNeighborUpdate: supplied nodeId (Manager::RequestNodeNeighborUpdate)
+        // Driver::ControllerCommand_DeleteAllReturnRoutes supplied nodeId (Manager::DeleteAllReturnRoutes)
+        // Driver::ControllerCommand_SendNodeInformation: supplied nodeId (Manager::SendNodeInformation)
+        // Driver::ControllerCommand_CreateNewPrimary: unknown (Manager::CreateNewPrimary)
+        // Driver::ControllerCommand_ReceiveConfiguration: unknown (Manager::ReceiveConfiguration)
+        // Driver::ControllerCommand_ReplaceFailedNode: could be the supplied nodeId or the nodeId of the node that was added (Manager::ReplaceFailedNode)
+        // Driver::ControllerCommand_TransferPrimaryRole: unknown (Manager::TransferPrimaryRole)
+        // Driver::ControllerCommand_RequestNetworkUpdate: supplied nodeId (Manager::RequestNetworkUpdate)
+        // Driver::ControllerCommand_ReplicationSend: supplied nodeId (Manager::ReplicationSend)
+        // Driver::ControllerCommand_CreateButton: supplied nodeId (Manager::CreateButton)
+        // Driver::ControllerCommand_DeleteButton: supplied nodeId (Manager::DeleteButton)
+		notification->SetHomeAndNodeIds(m_homeId, m_currentControllerCommand->m_controllerCommandNode);
+
 		notification->SetCommand(m_currentControllerCommand->m_controllerCommand);
 		notification->SetEvent(_state);
 
@@ -5768,6 +5805,7 @@ void Driver::NotifyWatchers()
 		/* check the any ValueID's sent as part of the Notification are still valid */
 		switch (notification->GetType())
 		{
+			case Notification::Type_ValueAdded:
 			case Notification::Type_ValueChanged:
 			case Notification::Type_ValueRefreshed:
 			{
@@ -5777,7 +5815,6 @@ void Driver::NotifyWatchers()
 					Log::Write(LogLevel_Info, notification->GetNodeId(), "Dropping Notification as ValueID does not exist");
 					nit = m_notifications.begin();
 					delete notification;
-					val->Release();
 					continue;
 				}
 				val->Release();
@@ -6925,8 +6962,8 @@ bool Driver::refreshNodeConfig(uint8 _nodeId)
 }
 
 //-----------------------------------------------------------------------------
-// <Driver::SendQueryStageComplete>
-// Queue an item on the query queue that indicates a stage is complete
+// <Driver::ReloadNode>
+// Reload a Node - Remove it from ozwcache, and re-initilize the node from scratch (doing a full  interview)
 //-----------------------------------------------------------------------------
 void Driver::ReloadNode(uint8 const _nodeId)
 {

@@ -1017,6 +1017,21 @@ uint32 Manager::GetNodeNeighbors(uint32 const _homeId, uint8 const _nodeId, uint
 }
 
 //-----------------------------------------------------------------------------
+// <Manager::SyncronizeNodeNeighbors>
+// Syncronise OZW's copy of the Neighbor List for a Node with the Controller
+//-----------------------------------------------------------------------------
+void Manager::SyncronizeNodeNeighbors(uint32 const _homeId, uint8 const _nodeId)
+{
+	if (Driver* driver = GetDriver(_homeId))
+	{
+		driver->RequestNodeNeighbors(_nodeId, 0);
+	}
+
+	return;
+}
+
+
+//-----------------------------------------------------------------------------
 // <Manager::GetNodeManufacturerName>
 // Get the manufacturer name of a node
 //-----------------------------------------------------------------------------
@@ -1791,6 +1806,25 @@ bool Manager::IsValuePolled(ValueID const& _id)
 
 	return res;
 }
+
+//-----------------------------------------------------------------------------
+// <Manager::IsValueValid>
+// Test whether the valueID is Valid
+//-----------------------------------------------------------------------------
+bool Manager::IsValueValid(ValueID const& _id)
+{
+	if (Driver* driver = GetDriver(_id.GetHomeId()))
+	{
+		Internal::LockGuard LG(driver->m_nodeMutex);
+		if (Internal::VC::Value* value = driver->GetValue(_id))
+		{
+			value->Release();
+			return true;
+		}
+	}
+	return false;
+}
+
 
 //-----------------------------------------------------------------------------
 // <Manager::GetValueAsBitSet>

@@ -101,6 +101,7 @@ DISTFILES =	.gitignore \
 	config/aeotec/zw140.xml \
 	config/aeotec/zw141.xml \
 	config/aeotec/zw162.xml \
+	config/aeotec/zw164.xml \
 	config/aeotec/zw175.xml \
 	config/aeotec/zwa001.xml \
 	config/aeotec/zwa002.xml \
@@ -110,6 +111,7 @@ DISTFILES =	.gitignore \
 	config/aeotec/zwa006.xml \
 	config/aeotec/zwa008.xml \
 	config/airlinemechanical/zds-ud10.xml \
+	config/alfred/DB2.xml \
 	config/assa_abloy/ConexisL1.xml \
 	config/assa_abloy/KeyfreeConnected-plus.xml \
 	config/assa_abloy/KeyfreeConnected.xml \
@@ -180,6 +182,7 @@ DISTFILES =	.gitignore \
 	config/duwi/zwws.xml \
 	config/ecolink/doorwindow.xml \
 	config/ecolink/firefighter.xml \
+	config/ecolink/floodfreeze.xml \
 	config/ecolink/motion.xml \
 	config/ecolink/sensor.xml \
 	config/ecolink/tiltsensor.xml \
@@ -260,10 +263,13 @@ DISTFILES =	.gitignore \
 	config/fibaro/fgsd002.xml \
 	config/fibaro/fgss101.xml \
 	config/fibaro/fgt001.xml \
+	config/fibaro/fgwd111.xml \
 	config/fibaro/fgwds221.xml \
+	config/fibaro/fgwoe.xml \
 	config/fibaro/fgwpe.xml \
 	config/fibaro/fgwpfzw5.xml \
 	config/fibaro/fgwpg111.xml \
+	config/fibaro/fgwr111.xml \
 	config/firstalert/zcombo.xml \
 	config/followgood/swz-1002.xml \
 	config/forest/fs2z5232000002.xml \
@@ -293,6 +299,7 @@ DISTFILES =	.gitignore \
 	config/ge/28167-plugin-dimmer.xml \
 	config/ge/28169-plugin-switch.xml \
 	config/ge/45604.xml \
+	config/ge/46201-switch.xml \
 	config/ge/dimmer.xml \
 	config/ge/dimmer_module.xml \
 	config/ge/hinge-pin.xml \
@@ -313,6 +320,7 @@ DISTFILES =	.gitignore \
 	config/greenwave/gs1110-1-gr-1.xml \
 	config/greenwave/powernode1.xml \
 	config/greenwave/powernode6.xml \
+	config/guardtec/gkw2000d.xml \
 	config/hank/hkzw-dws01.xml \
 	config/hank/hkzw-fld01.xml \
 	config/hank/hkzw-ms01.xml \
@@ -337,6 +345,7 @@ DISTFILES =	.gitignore \
 	config/heltun/he-zw-therm-fc1.xml \
 	config/heltun/he-zw-therm-fl2.xml \
 	config/homeseer/ezmotionplus.xml \
+	config/homeseer/hs-ds100plus.xml \
 	config/homeseer/hs-fc200plus.xml \
 	config/homeseer/hs-fls100plus.xml \
 	config/homeseer/hs-fs100plus.xml \
@@ -432,6 +441,7 @@ DISTFILES =	.gitignore \
 	config/images/aeotec/zw140.png \
 	config/images/aeotec/zw141.png \
 	config/images/aeotec/zw162.png \
+	config/images/aeotec/zw164.png \
 	config/images/aeotec/zw195.png \
 	config/images/aeotec/zwa001.png \
 	config/images/aeotec/zwa002.png \
@@ -440,6 +450,7 @@ DISTFILES =	.gitignore \
 	config/images/aeotec/zwa005.png \
 	config/images/aeotec/zwa006.png \
 	config/images/airlinemechanical/zds-ud10.png \
+	config/images/alfred/DB2.png \
 	config/images/assa_abloy/ConexisL1.png \
 	config/images/assa_abloy/KeyfreeConnected-plus.png \
 	config/images/assa_abloy/KeyfreeConnected.png \
@@ -484,6 +495,7 @@ DISTFILES =	.gitignore \
 	config/images/duwi/zwws.png \
 	config/images/ecolink/doorwindow.png \
 	config/images/ecolink/firefighter.png \
+	config/images/ecolink/floodfreeze.png \
 	config/images/ecolink/motion.png \
 	config/images/ecolink/sensor.png \
 	config/images/ecolink/tiltsensor.png \
@@ -544,9 +556,12 @@ DISTFILES =	.gitignore \
 	config/images/fibaro/fgs223.png \
 	config/images/fibaro/fgsd002.png \
 	config/images/fibaro/fgt001.png \
+	config/images/fibaro/fgwd111.png \
+	config/images/fibaro/fgwoe.png \
 	config/images/fibaro/fgwpe.png \
 	config/images/fibaro/fgwpfzw5.png \
 	config/images/fibaro/fgwpg111.png \
+	config/images/fibaro/fgwr111.png \
 	config/images/firstalert/zcombo.png \
 	config/images/followgood/swz-1002.png \
 	config/images/forest/fs2z5232000002.png \
@@ -575,6 +590,7 @@ DISTFILES =	.gitignore \
 	config/images/ge/28167-plugin-dimmer.png \
 	config/images/ge/28169-plugin-switch.png \
 	config/images/ge/45604.png \
+	config/images/ge/46201-switch.png \
 	config/images/ge/dimmer.png \
 	config/images/ge/dimmer_module.png \
 	config/images/ge/hinge-pin.png \
@@ -592,6 +608,7 @@ DISTFILES =	.gitignore \
 	config/images/greenwave/gs1110-1-gr-1.png \
 	config/images/greenwave/powernode1.png \
 	config/images/greenwave/powernode6.png \
+	config/images/guardtec/gkw2000d.png \
 	config/images/hank/hkzw-dws01.png \
 	config/images/hank/hkzw-fld01.png \
 	config/images/hank/hkzw-ms01.png \
@@ -610,6 +627,7 @@ DISTFILES =	.gitignore \
 	config/images/heiman/HS1SA-Z.png \
 	config/images/heiman/HS1WL-Z.png \
 	config/images/heiman/HS2SK-Z.png \
+	config/images/homeseer/hs-ds100plus.png \
 	config/images/homeseer/hs-fc200plus.png \
 	config/images/homeseer/hs-fls100plus.png \
 	config/images/homeseer/hs-ls100plus.png \
@@ -638,6 +656,8 @@ DISTFILES =	.gitignore \
 	config/images/idlock/idlock101.png \
 	config/images/idlock/idlock150.png \
 	config/images/ingersoll/dwzwave1.png \
+	config/images/inovelli/lzw30-sn.png \
+	config/images/inovelli/lzw30.png \
 	config/images/inovelli/simple_module.png \
 	config/images/iwatsu/ne-4ct-2p.png \
 	config/images/iwatsu/ne-4ct.png \
@@ -703,6 +723,7 @@ DISTFILES =	.gitignore \
 	config/images/popp/700045.png \
 	config/images/popp/700168.png \
 	config/images/popp/700397.png \
+	config/images/popp/dwt.png \
 	config/images/popp/smoke-detector.png \
 	config/images/popp/solar-siren.png \
 	config/images/popp/zweather.png \
@@ -714,6 +735,7 @@ DISTFILES =	.gitignore \
 	config/images/qubino/ZMNHCDx.png \
 	config/images/qubino/ZMNHDA2.png \
 	config/images/qubino/ZMNHDDx.png \
+	config/images/qubino/ZMNHIDx.png \
 	config/images/qubino/ZMNHNDx.png \
 	config/images/qubino/ZMNHODx.png \
 	config/images/qubino/ZMNHSDx.png \
@@ -843,6 +865,8 @@ DISTFILES =	.gitignore \
 	config/images/zwave.me/zweather.png \
 	config/images/zwp/WD-100.png \
 	config/ingersoll/dwzwave1.xml \
+	config/inovelli/lzw30-sn.xml \
+	config/inovelli/lzw30.xml \
 	config/inovelli/nzw1201.xml \
 	config/inovelli/nzw30.xml \
 	config/inovelli/nzw31.xml \
@@ -962,6 +986,7 @@ DISTFILES =	.gitignore \
 	config/popp/700168.xml \
 	config/popp/700397.xml \
 	config/popp/700793.xml \
+	config/popp/dwt.xml \
 	config/popp/smoke-detector.xml \
 	config/popp/solar-siren.xml \
 	config/popp/zweather.xml \
@@ -1591,8 +1616,6 @@ DISTFILES =	.gitignore \
 	debian/watch \
 	dist.mk \
 	dist/libopenzwave.changes \
-	dist/openzwave.spec \
-	dist/openzwave.spec \
 	dist/openzwave.spec \
 	dist/openzwave.spec.in \
 	distfiles.mk \
