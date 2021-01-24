@@ -146,6 +146,10 @@ namespace OpenZWave
 						return 0;
 					}
 
+					virtual bool supportsMultiInstance() {
+						return true;
+					}
+
 					void SetInstances(uint8 const _instances);
 					void SetInstance(uint8 const _endPoint);
 					/* overridden in the MultiInstance CC to set the Global Label for each Instance */
@@ -199,7 +203,8 @@ namespace OpenZWave
 
 					// Helper methods
 					string ExtractValue(uint8 const* _data, uint8* _scale, uint8* _precision, uint8 _valueOffset = 1) const;
-
+					uint32 decodeDuration(uint8 data) const;
+					uint8 encodeDuration(uint32 seconds) const;
 					/**
 					 *  Append a floating-point value to a message.
 					 *  \param _msg The message to which the value should be appended.
@@ -216,24 +221,18 @@ namespace OpenZWave
 					typedef struct RefreshValue
 					{
 							uint8 cc;
-							uint8 genre;
-							uint8 instance;
+							uint8 requestflags;
 							uint16 index;
-							std::vector<RefreshValue *> RefreshClasses;
 					} RefreshValue;
 
 				protected:
-					virtual void CreateVars(uint8 const _instance)
-					{
-					}
+					virtual void CreateVars(uint8 const _instance);
 					void ReadValueRefreshXML(TiXmlElement const* _ccElement);
 					CompatOptionManager m_com;
 					CompatOptionManager m_dom;
 
 				public:
-					virtual void CreateVars(uint8 const _instance, uint8 const _index)
-					{
-					}
+					void CreateVars();
 
 				private:
 					uint32 m_homeId;
@@ -242,7 +241,7 @@ namespace OpenZWave
 					map<uint8, uint8> m_endPointMap;
 					map<uint8, string> m_instanceLabel;
 					bool m_SecureSupport; 	// Does this commandclass support secure encryption (eg, the Security CC doesn't encrypt itself, so it doesn't support encryption)
-					std::vector<RefreshValue *> m_RefreshClassValues; // what Command Class Values should we refresh ?
+					multimap<uint16, RefreshValue *> m_RefreshClassValues; // what Command Class Values should we refresh ?
 					string m_commandClassLabel;
 					//-----------------------------------------------------------------------------
 					// Record which items of static data have been read from the device

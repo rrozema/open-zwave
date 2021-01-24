@@ -149,7 +149,7 @@ namespace OpenZWave
 								if (requestedScale) {
 									const Internal::VC::ValueList::Item *item = requestedScale->GetItem();
 									if (item)
-										scale = item->m_value;
+										scale = ((item->m_value & 0x03) << 3);
 									requestedScale->Release();
 								}
 								value->Release();
@@ -177,7 +177,7 @@ namespace OpenZWave
 						if (requestedScale) {
 							const Internal::VC::ValueList::Item *item = requestedScale->GetItem();
 							if (item)
-								scale = item->m_value;
+								scale = ((item->m_value & 0x03) << 3);
 							requestedScale->Release();
 						}
 						value->Release();
@@ -295,14 +295,6 @@ namespace OpenZWave
 				return false;
 			}
 
-//-----------------------------------------------------------------------------
-// <SensorMultilevel::CreateVars>
-// Create the values managed by this command class
-//-----------------------------------------------------------------------------
-			void SensorMultilevel::CreateVars(uint8 const _instance)
-			{
-				// Don't create anything here. We do it in the report.
-			}
 		} // namespace CC
 	} // namespace Internal
 } // namespace OpenZWave

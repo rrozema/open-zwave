@@ -37,6 +37,7 @@
 #include "value_classes/ValueBool.h"
 #include "value_classes/ValueButton.h"
 #include "value_classes/ValueByte.h"
+#include "value_classes/ValueInt.h"
 
 namespace OpenZWave
 {
@@ -74,9 +75,23 @@ namespace OpenZWave
 //-----------------------------------------------------------------------------
 			bool SwitchMultilevel::RequestState(uint32 const _requestFlags, uint8 const _instance, Driver::MsgQueue const _queue)
 			{
+				if (_requestFlags & RequestFlag_Static) {
+					if (GetVersion() >= 3)
+					{
+						// Request the supported switch types
+						Msg* msg = new Msg("SwitchMultilevelCmd_SupportedGet", GetNodeId(), REQUEST, FUNC_ID_ZW_SEND_DATA, true, true, FUNC_ID_APPLICATION_COMMAND_HANDLER, GetCommandClassId());
+						msg->Append(GetNodeId());
+						msg->Append(2);
+						msg->Append(GetCommandClassId());
+						msg->Append(SwitchMultilevelCmd_SupportedGet);
+						msg->Append(GetDriver()->GetTransmitOptions());
+						GetDriver()->SendMsg(msg, Driver::MsgQueue_Send);
+					}
+					return true;
+				}
 				if (_requestFlags & RequestFlag_Dynamic)
 				{
-					return RequestValue(_requestFlags, 0, _instance, _queue);
+					return RequestValue(_requestFlags, ValueID_Index_SwitchMultiLevel::Level, _instance, _queue);
 				}
 
 				return false;
@@ -100,6 +115,7 @@ namespace OpenZWave
 						msg->Append(SwitchMultilevelCmd_Get);
 						msg->Append(GetDriver()->GetTransmitOptions());
 						GetDriver()->SendMsg(msg, _queue);
+						
 						return true;
 					}
 					else
@@ -108,28 +124,6 @@ namespace OpenZWave
 					}
 				}
 				return false;
-			}
-
-			bool SwitchMultilevel::HandleIncomingMsg(uint8 const* _data, uint32 const _length, uint32 const _instance	// = 1
-					)
-			{
-				if (SwitchMultilevelCmd_Set == (SwitchMultilevelCmd) _data[0])
-				{
-					Log::Write(LogLevel_Info, GetNodeId(), "Received SwitchMultiLevel Set: level=%d", _data[1]);
-					return true;
-				}
-				else if (SwitchMultilevelCmd_StartLevelChange == (SwitchMultilevelCmd) _data[0])
-				{
-					Log::Write(LogLevel_Info, GetNodeId(), "Received SwitchMultiLevel StartLevelChange: level=%d", _data[1]);
-
-				}
-				else if (SwitchMultilevelCmd_StopLevelChange == (SwitchMultilevelCmd) _data[0])
-				{
-					Log::Write(LogLevel_Info, GetNodeId(), "Received SwitchMultiLevel StopLevelChange: level=%d", _data[1]);
-
-				}
-
-				return true;
 			}
 
 //-----------------------------------------------------------------------------
@@ -145,6 +139,9 @@ namespace OpenZWave
 
 					if (Internal::VC::ValueByte* value = static_cast<Internal::VC::ValueByte*>(GetValue(_instance, ValueID_Index_SwitchMultiLevel::Level)))
 					{
+						/* Target Value - 0 to 100 is valid values, 0xFF is also valid */
+						if ((GetVersion() >= 4) && ((_data[2] <= 100) || (_data[2] == 0xFF)))
+							value->SetTargetValue(_data[2], _data[3]);
 						value->OnValueRefreshed(_data[1]);
 						value->Release();
 					}
@@ -162,9 +159,9 @@ namespace OpenZWave
 						// data[3] might be duration
 						if (_length > 3)
 						{
-							if (Internal::VC::ValueByte* value = static_cast<Internal::VC::ValueByte*>(GetValue(_instance, ValueID_Index_SwitchMultiLevel::Duration)))
+							if (Internal::VC::ValueInt* value = static_cast<Internal::VC::ValueInt*>(GetValue(_instance, ValueID_Index_SwitchMultiLevel::Duration)))
 							{
-								value->OnValueRefreshed(_data[3]);
+								value->OnValueRefreshed(decodeDuration(_data[3]));
 								value->Release();
 							}
 						}
@@ -225,33 +222,8 @@ namespace OpenZWave
 					}
 					return true;
 				}
-
+				Log::Write(LogLevel_Warning, GetNodeId(), "Recieved a Unhandled SwitchMultiLevel Command: %d", _data[0]);
 				return false;
-			}
-
-//-----------------------------------------------------------------------------
-// <SwitchMultilevel::SetVersion>
-// Set the command class version
-//-----------------------------------------------------------------------------
-			void SwitchMultilevel::SetVersion(uint8 const _version)
-			{
-				CommandClass::SetVersion(_version);
-
-				if (_version >= 3)
-				{
-					// Request the supported switch types
-					Msg* msg = new Msg("SwitchMultilevelCmd_SupportedGet", GetNodeId(), REQUEST, FUNC_ID_ZW_SEND_DATA, true, true, FUNC_ID_APPLICATION_COMMAND_HANDLER, GetCommandClassId());
-					msg->Append(GetNodeId());
-					msg->Append(2);
-					msg->Append(GetCommandClassId());
-					msg->Append(SwitchMultilevelCmd_SupportedGet);
-					msg->Append(GetDriver()->GetTransmitOptions());
-					GetDriver()->SendMsg(msg, Driver::MsgQueue_Send);
-
-					// Set the request flag again - it will be cleared when we get a
-					// response to the SwitchMultilevelCmd_SupportedGet message.
-					SetStaticRequest(StaticRequest_Version);
-				}
 			}
 
 //-----------------------------------------------------------------------------
@@ -331,9 +303,9 @@ namespace OpenZWave
 					}
 					case ValueID_Index_SwitchMultiLevel::Duration:
 					{
-						if (Internal::VC::ValueByte* value = static_cast<Internal::VC::ValueByte*>(GetValue(instance, ValueID_Index_SwitchMultiLevel::Duration)))
+						if (Internal::VC::ValueInt* value = static_cast<Internal::VC::ValueInt*>(GetValue(instance, ValueID_Index_SwitchMultiLevel::Duration)))
 						{
-							value->OnValueRefreshed((static_cast<Internal::VC::ValueByte const*>(&_value))->GetValue());
+							value->OnValueRefreshed((static_cast<Internal::VC::ValueInt const*>(&_value))->GetValue());
 							value->Release();
 						}
 						res = true;
@@ -429,27 +401,21 @@ namespace OpenZWave
 
 				if (GetVersion() >= 2)
 				{
-					Internal::VC::ValueByte* durationValue = static_cast<Internal::VC::ValueByte*>(GetValue(_instance, ValueID_Index_SwitchMultiLevel::Duration));
-					uint8 duration = durationValue->GetValue();
+					Internal::VC::ValueInt* durationValue = static_cast<Internal::VC::ValueInt*>(GetValue(_instance, ValueID_Index_SwitchMultiLevel::Duration));
+					uint32 duration = durationValue->GetValue();
 					durationValue->Release();
-					if (duration == 0xff)
-					{
-						Log::Write(LogLevel_Info, GetNodeId(), "  Duration: Default");
-					}
-					else if (duration >= 0x80)
-					{
-						Log::Write(LogLevel_Info, GetNodeId(), "  Duration: %d minutes", duration - 0x7f);
-					}
-					else
-					{
+					if (duration > 7620)
+						Log::Write(LogLevel_Info, GetNodeId(), "  Duration: Device Default");
+					else if (duration > 0x7F)
+						Log::Write(LogLevel_Info, GetNodeId(), "  Rouding to %d Minutes (over 127 seconds)", encodeDuration(duration)-0x79);
+					else 
 						Log::Write(LogLevel_Info, GetNodeId(), "  Duration: %d seconds", duration);
-					}
 
 					msg->Append(4);
 					msg->Append(GetCommandClassId());
 					msg->Append(SwitchMultilevelCmd_Set);
 					msg->Append(_level);
-					msg->Append(duration);
+					msg->Append(encodeDuration(duration));
 				}
 				else
 				{
@@ -500,8 +466,8 @@ namespace OpenZWave
 				}
 				Log::Write(LogLevel_Info, GetNodeId(), "  Start Level:        %d", startLevel);
 
-				uint8 duration = 0;
-				if (Internal::VC::ValueByte* durationValue = static_cast<Internal::VC::ValueByte*>(GetValue(_instance, ValueID_Index_SwitchMultiLevel::Duration)))
+				uint32 duration = -1;
+				if (Internal::VC::ValueInt* durationValue = static_cast<Internal::VC::ValueInt*>(GetValue(_instance, ValueID_Index_SwitchMultiLevel::Duration)))
 				{
 					length = 5;
 					duration = durationValue->GetValue();
@@ -542,7 +508,7 @@ namespace OpenZWave
 
 				if (length >= 5)
 				{
-					msg->Append(duration);
+					msg->Append(encodeDuration(duration));
 				}
 
 				if (length == 6)
@@ -598,7 +564,7 @@ namespace OpenZWave
 					}
 					if (GetVersion() >= 2)
 					{
-						node->CreateValueByte(ValueID::ValueGenre_System, GetCommandClassId(), _instance, ValueID_Index_SwitchMultiLevel::Duration, "Dimming Duration", "", false, false, 0xff, 0);
+						node->CreateValueInt(ValueID::ValueGenre_System, GetCommandClassId(), _instance, ValueID_Index_SwitchMultiLevel::Duration, "Dimming Duration", "", false, false, -1, 0);
 					}
 					node->CreateValueByte(ValueID::ValueGenre_User, GetCommandClassId(), _instance, ValueID_Index_SwitchMultiLevel::Level, "Level", "", false, false, 0, 0);
 					node->CreateValueButton(ValueID::ValueGenre_User, GetCommandClassId(), _instance, ValueID_Index_SwitchMultiLevel::Bright, "Bright", 0);

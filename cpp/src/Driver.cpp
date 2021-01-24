@@ -89,7 +89,8 @@ using namespace OpenZWave;
 // 02: 01-12-2011 - Command class m_afterMark sense corrected, and attribute named to match.
 // 03: 08-04-2011 - Changed command class instance handling for non-sequential MultiChannel endpoints.
 // 04: 12-07-2019 - Changed Interview Order
-uint32 const c_configVersion = 4;
+// 05: 10-07-2020 - Duration ValueID's changed from Byte to Int. Invalidate Any previous caches. 
+uint32 const c_configVersion = 5;
 
 static char const* c_libraryTypeNames[] =
 { "Unknown",			// library type 0
@@ -178,7 +179,6 @@ Driver::~Driver()
 
 	// append final driver stats output to the log file
 	LogDriverStatistics();
-
 	// Save the driver config before deleting anything else
 	bool save;
 	if (Options::Get()->GetOptionAsBool("SaveConfiguration", &save))
@@ -202,14 +202,12 @@ Driver::~Driver()
 
 	m_dnsThread->Stop();
 	m_dnsThread->Release();
-	delete m_dns;
 
 	m_driverThread->Stop();
 	m_driverThread->Release();
 
 	m_timerThread->Stop();
 	m_timerThread->Release();
-	delete m_timer;
 
 	m_sendMutex->Release();
 
@@ -296,6 +294,10 @@ Driver::~Driver()
 	delete this->AuthKey;
 	delete this->EncryptKey;
 	delete this->m_httpClient;
+	delete this->m_timer;
+	delete this->m_dns;
+
+
 }
 
 //-----------------------------------------------------------------------------
@@ -396,7 +398,7 @@ void Driver::DriverThreadProc(Internal::Platform::Event* _exitEvent)
 					case -1:
 					{
 						// Wait has timed out - time to resend
-						if (m_currentMsg != NULL)
+						if (m_currentMsg != NULL && !m_currentMsg->isResendDuetoCANorNAK())
 						{
 							Notification* notification = new Notification(Notification::Type_Notification);
 							notification->SetHomeAndNodeIds(m_homeId, m_currentMsg->GetTargetNodeId());
@@ -412,6 +414,9 @@ void Driver::DriverThreadProc(Internal::Platform::Event* _exitEvent)
 					case 0:
 					{
 						// Exit has been signalled
+						m_initMutex->Lock();
+						m_exit = true;
+						m_initMutex->Unlock();
 						return;
 					}
 					case 1:
@@ -468,6 +473,9 @@ void Driver::DriverThreadProc(Internal::Platform::Event* _exitEvent)
 			if (Internal::Platform::Wait::Single(_exitEvent, 5000) == 0)
 			{
 				// Exit signalled.
+				m_initMutex->Lock();
+				m_exit = true;
+				m_initMutex->Unlock();
 				return;
 			}
 		}
@@ -477,6 +485,9 @@ void Driver::DriverThreadProc(Internal::Platform::Event* _exitEvent)
 			if (Internal::Platform::Wait::Single(_exitEvent, 30000) == 0)
 			{
 				// Exit signalled.
+				m_initMutex->Lock();
+				m_exit = true;
+				m_initMutex->Unlock();
 				return;
 			}
 		}
@@ -513,9 +524,14 @@ bool Driver::Init(uint32 _attempts)
 	// Controller opened successfully, so we need to start all the worker threads
 	m_pollThread->Start(Driver::PollThreadEntryPoint, this);
 
+
 	// Send a NAK to the ZWave device
 	uint8 nak = NAK;
 	m_controller->Write(&nak, 1);
+
+	// Purge any Messages in the Serial Buffer 
+	m_controller->Purge();
+
 
 	/* this kicks of the Init Sequence to get the Controller in shape. */
 	SendMsg(new Internal::Msg("FUNC_ID_ZW_GET_VERSION", 0xff, REQUEST, FUNC_ID_ZW_GET_VERSION, false), Driver::MsgQueue_Command);
@@ -750,6 +766,11 @@ void Driver::WriteCache()
 		Log::Write(LogLevel_Warning, "WARNING: Tried to write driver config with no home ID set");
 		return;
 	}
+	if (m_exit) {
+		Log::Write(LogLevel_Info, "Skipping Cache Save as we are shutting down");
+		return;
+	}
+
 	Log::Write(LogLevel_Info, "Saving Cache");
 	// Create a new XML document to contain the driver configuration
 	TiXmlDocument doc;
@@ -1641,7 +1662,7 @@ bool Driver::ReadMsg()
 				m_readAborts++;
 				break;
 			}
-
+			/* this is the size of the packet */
 			m_controller->Read(&buffer[1], 1);
 			m_controller->SetSignalThreshold(buffer[1]);
 			if (Internal::Platform::Wait::Single(m_controller, 500) < 0)
@@ -1717,21 +1738,25 @@ bool Driver::ReadMsg()
 			if (m_currentMsg != NULL)
 			{
 				m_currentMsg->SetMaxSendAttempts(m_currentMsg->GetMaxSendAttempts() + 1);
+				m_currentMsg->setResendDuetoCANorNAK();
 			}
 			else
 			{
 				Log::Write(LogLevel_Warning, "m_currentMsg was NULL when trying to set MaxSendAttempts");
 				Log::QueueDump();
 			}
-			WriteMsg("CAN");
+			// Don't do WriteMsg("CAN"); here, the controller has data waiting to be handled by OZW.
+			// Instead, let the main loop handle incoming message first to flush the buffer(s)
 			break;
 		}
 
 		case NAK:
 		{
 			Log::Write(LogLevel_Warning, GetNodeNumber(m_currentMsg), "WARNING: NAK received...triggering resend");
+			m_currentMsg->SetMaxSendAttempts(m_currentMsg->GetMaxSendAttempts() + 1);
+			m_currentMsg->setResendDuetoCANorNAK();
 			m_NAKCnt++;
-			WriteMsg("NAK");
+			//WriteMsg("NAK");
 			break;
 		}
 
@@ -4067,6 +4092,7 @@ bool Driver::EnablePoll(ValueID const &_valueId, uint8 const _intensity)
 			notification->SetValueId(_valueId);
 			QueueNotification(notification);
 			Log::Write(LogLevel_Info, nodeId, "EnablePoll for HomeID 0x%.8x, value(cc=0x%02x,in=0x%02x,id=0x%02x)--poll list has %d items", _valueId.GetHomeId(), _valueId.GetCommandClassId(), _valueId.GetIndex(), _valueId.GetInstance(), m_pollList.size());
+			WriteCache();
 			return true;
 		}
 
@@ -4122,6 +4148,7 @@ bool Driver::DisablePoll(ValueID const &_valueId)
 				notification->SetValueId(_valueId);
 				QueueNotification(notification);
 				Log::Write(LogLevel_Info, nodeId, "DisablePoll for HomeID 0x%.8x, value(cc=0x%02x,in=0x%02x,id=0x%02x)--poll list has %d items", _valueId.GetHomeId(), _valueId.GetCommandClassId(), _valueId.GetIndex(), _valueId.GetInstance(), m_pollList.size());
+				WriteCache();
 				return true;
 			}
 		}
@@ -4229,6 +4256,7 @@ void Driver::SetPollIntensity(ValueID const &_valueId, uint8 const _intensity)
 
 	value->Release();
 	m_pollMutex->Unlock();
+	WriteCache();
 }
 
 //-----------------------------------------------------------------------------
@@ -4932,6 +4960,7 @@ void Driver::SetNodeManufacturerName(uint8 const _nodeId, string const& _manufac
 	{
 		node->SetManufacturerName(_manufacturerName);
 	}
+	WriteCache();
 }
 
 //-----------------------------------------------------------------------------
@@ -4945,6 +4974,7 @@ void Driver::SetNodeProductName(uint8 const _nodeId, string const& _productName)
 	{
 		node->SetProductName(_productName);
 	}
+	WriteCache();
 }
 
 //-----------------------------------------------------------------------------
@@ -4958,6 +4988,7 @@ void Driver::SetNodeName(uint8 const _nodeId, string const& _nodeName)
 	{
 		node->SetNodeName(_nodeName);
 	}
+	WriteCache();
 }
 
 //-----------------------------------------------------------------------------
@@ -4971,6 +5002,7 @@ void Driver::SetNodeLocation(uint8 const _nodeId, string const& _location)
 	{
 		node->SetLocation(_location);
 	}
+	WriteCache();
 }
 
 //-----------------------------------------------------------------------------
@@ -5890,7 +5922,6 @@ void Driver::NotifyWatchers()
 			default:
 				break;
 		}
-
 		Log::Write(LogLevel_Detail, notification->GetNodeId(), "Notification: %s", notification->GetAsString().c_str());
 
 		Manager::Get()->NotifyWatchers(notification);
@@ -6975,6 +7006,17 @@ bool Driver::startMFSDownload(string configfile)
 	return m_httpClient->StartDownload(download);
 }
 
+bool Driver::startDownload(string target, string file)
+{
+	Internal::HttpDownload *download = new Internal::HttpDownload();
+	download->url = "http://download.db.openzwave.com/" + file;
+	download->filename = target;
+	download->operation = Internal::HttpDownload::Image;
+	Log::Write(LogLevel_Info, "Queuing download for %s (Node %d)", download->url.c_str(), download->node);
+	return m_httpClient->StartDownload(download);
+}
+
+
 bool Driver::refreshNodeConfig(uint8 _nodeId)
 {
 	Internal::LockGuard LG(m_nodeMutex);
@@ -7092,6 +7134,10 @@ void Driver::processDownload(Internal::HttpDownload *download)
 		else if (download->operation == Internal::HttpDownload::MFSConfig)
 		{
 			m_mfs->mfsConfigDownloaded(this, download->filename);
+		} 
+		else if (download->operation == Internal::HttpDownload::Image) 
+		{
+			m_mfs->fileDownloaded(this, download->filename);
 		}
 	}
 	else
@@ -7104,6 +7150,10 @@ void Driver::processDownload(Internal::HttpDownload *download)
 		else if (download->operation == Internal::HttpDownload::MFSConfig)
 		{
 			m_mfs->mfsConfigDownloaded(this, download->filename, false);
+		}
+		else if (download->operation == Internal::HttpDownload::Image) 
+		{
+			m_mfs->fileDownloaded(this, download->filename, false);
 		}
 		Notification* notification = new Notification(Notification::Type_UserAlerts);
 		notification->SetUserAlertNotification(Notification::Alert_ConfigFileDownloadFailed);

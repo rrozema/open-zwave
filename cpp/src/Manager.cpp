@@ -195,8 +195,13 @@ Manager::Manager() :
 	// when "make" was run. A Makefile gets this info from git describe --long --tags --dirty
 	Log::Write(LogLevel_Always, "OpenZwave Version %s Starting Up", getVersionLongAsString().c_str());
 	Log::Write(LogLevel_Always, "Using Language Localization %s", Internal::Localization::Get()->GetSelectedLang().c_str());
-	Internal::NotificationCCTypes::Create();
-	Internal::SensorMultiLevelCCTypes::Create();
+	if (!Internal::NotificationCCTypes::Create()) {
+		Log::Write(LogLevel_Error, "mgr,     Cannot Create NotificationCCTypes!");
+	}
+	if (!Internal::SensorMultiLevelCCTypes::Create()) {
+		Log::Write(LogLevel_Error, "mgr,     Cannot Create SensorMultiLevelCCTypes!");
+	}
+
 }
 
 //-----------------------------------------------------------------------------
@@ -3089,7 +3094,7 @@ bool Manager::SetValue(ValueID const& _id, string const& _value)
 				case ValueID::ValueType_Schedule:
 				case ValueID::ValueType_Button:
 				{
-					OZW_ERROR(OZWException::OZWEXCEPTION_CANNOT_CONVERT_VALUEID, "ValueID passed to GetValueFloatPrecision is not a Decimal Value");
+					OZW_ERROR(OZWException::OZWEXCEPTION_INVALID_VALUEID, "ValueID passed to SetValue cannot be set on Schedule or Button");
 					break;
 				}
 			}

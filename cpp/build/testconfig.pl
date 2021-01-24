@@ -68,13 +68,13 @@ my $data = $xml->XMLin($_[0], ForceArray => [ 'Group', 'MetaDataItem', 'Entry' ]
 foreach my $rev ($data)
 {
 	#print $_[0]."-".Dumper($rev->{Revision});
+	my $fr = int $rev->{Revision};
 	my $md5 = digest_file_hex($_[0], "SHA-512");
 	if (defined($CFG::versiondb{$_[0]}))
 	{
 		if ($CFG::versiondb{$_[0]}{md5} ne $md5) 
 		{
 			my $dbr = int $CFG::versiondb{$_[0]}->{Revision};
-			my $fr = int $rev->{Revision};
 			if ($dbr >= $fr )
 			{
 				print $_[0]." - md5 does not match Database - Database Revision:";
@@ -84,7 +84,7 @@ foreach my $rev ($data)
 			} else {
 				my %versions;
 				$versions{md5} = $md5;
-				$versions{Revision} = $rev->{Revision};
+				$versions{Revision} = $fr;
 				$CFG::versiondb{$_[0]} = \%versions;
 				print($_[0]." - Updating Database\n");
 			}			
@@ -92,7 +92,7 @@ foreach my $rev ($data)
 	} else { 
 		my %versions;
 		$versions{md5} = $md5;
-		$versions{Revision} = $rev->{Revision};
+		$versions{Revision} = $fr;
 		$CFG::versiondb{$_[0]} = \%versions;
 		print($_[0]." - Adding new file to Database\n");
 	}
@@ -134,12 +134,16 @@ foreach my $metadataitem ($data->{MetaData})
 				if ($data->{Revision} == $changelog->{'revision'}) {
 					$gotrev = 1;
 				}
+				if (!length($changelog->{'content'})) {
+					LogError($_[0], 9, "No Text in Entry for ChangeLog Revision $changelog->{revision}");
+				}
 			}
 			if ($gotrev == 0) {
 				LogError($_[0], 9, "No Change Log Entry for this revision");
 			}
 			#now make sure required attributes have type/id entries
 			my %params = map { $_ => 1 } @metadatatypeneeded;
+			my $gotpic = 0;
 			foreach my $mdi (@{$metadataitem->{MetaDataItem}}) {
 				if (exists $params{$mdi->{name}}) {
 					if (!defined($mdi->{type})) {
@@ -149,8 +153,21 @@ foreach my $metadataitem ($data->{MetaData})
 						LogError($_[0], 11, "ID Identifier Required for $mdi->{name}");
 					}
 				}
+				if ($mdi->{name} eq 'ProductPic') {
+					$gotpic = 1;
+					if (defined($mdi->{content})) { 
+						if (!-e "config/$mdi->{content}" ) {
+							LogError($_[0], 12, "Image File Missing - config/$mdi->{content}");
+						}
+					} else {
+						LogError($_[0], 13, "Empty ProductPic Entry");
+					}
+					
+				}
 			}
-			
+			if ($gotpic == 0) {
+				LogError($_[0], 13, "No ProductPic Entry in MetaData");
+			}
 		}
 	}
      $data = $xml->XMLin($_[0], ForceArray => [ 'Value', 'MetaDataItem' ], KeyAttr => { CommandClass=>"id"});
@@ -250,22 +267,22 @@ my $xml = new XML::Simple;
 my $data = $xml->XMLin("config/manufacturer_specific.xml", KeyAttr => "", ForceArray => [ 'Product' ] );
 # do a check of MFS Revision etc 
 my $md5 = digest_file_hex("config/manufacturer_specific.xml", "SHA-512");
+my $fr = int $data->{Revision};
 if (defined($CFG::versiondb{"config/manufacturer_specific.xml"}))
 	{
 	if ($CFG::versiondb{"config/manufacturer_specific.xml"}{md5} != $md5) 
 		{
 		my $dbr = $CFG::versiondb{"config/manufacturer_specific.xml"}->{Revision};
-		my $fr = $data->{Revision};
 		if ($dbr ge $fr )
 		{
 			print "config/manufacturer_specific.xml"." - md5 does not match Database - Database Revision:";
-			print $CFG::versiondb{"config/manufacturer_specific.xml"}->{Revision}." File Revision:".int $data->{Revision};
+			print $CFG::versiondb{"config/manufacturer_specific.xml"}->{Revision}." File Revision:".$fr;
 			print "\n";
 			LogError("config/manufacturer_specific.xml", 8, "Revision Number Was Not Bumped");	
 		} else {
 			my %versions;
 			$versions{md5} = $md5;
-			$versions{Revision} = $data->{Revision};
+			$versions{Revision} = $fr;
 			$CFG::versiondb{"config/manufacturer_specific.xml"} = \%versions;
 			print("config/manufacturer_specific.xml"." - Updating Database\n");
 		}			
@@ -273,7 +290,7 @@ if (defined($CFG::versiondb{"config/manufacturer_specific.xml"}))
 } else { 
 	my %versions;
 	$versions{md5} = $md5;
-	$versions{Revision} = $data->{Revision};
+	$versions{Revision} = $fr;
 	$CFG::versiondb{"config/manufacturer_specific.xml"} = \%versions;
 	print("config/manufacturer_specific.xml"." - Adding new file to Database\n");
 }
@@ -314,22 +331,22 @@ my $xml = new XML::Simple;
 my $data = $xml->XMLin("config/Localization.xml", KeyAttr => "", ForceArray => [ 'Localization' ] );
 # do a check of MFS Revision etc 
 my $md5 = digest_file_hex("config/Localization.xml", "SHA-512");
+my $fr = int $data->{Revision};
 if (defined($CFG::versiondb{"config/Localization.xml"}))
 	{
 	if ($CFG::versiondb{"config/Localization.xml"}{md5} != $md5) 
 		{
 		my $dbr = $CFG::versiondb{"config/Localization.xml"}->{Revision};
-		my $fr = $data->{Revision};
 		if ($dbr ge $fr )
 		{
 			print "config/Localization.xml"." - md5 does not match Database - Database Revision:";
-			print $CFG::versiondb{"config/Localization.xml"}->{Revision}." File Revision:".int $data->{Revision};
+			print $CFG::versiondb{"config/Localization.xml"}->{Revision}." File Revision:".$fr;
 			print "\n";
 			LogError("config/Localization.xml", 8, "Revision Number Was Not Bumped");	
 		} else {
 			my %versions;
 			$versions{md5} = $md5;
-			$versions{Revision} = $data->{Revision};
+			$versions{Revision} = $fr;
 			$CFG::versiondb{"config/Localization.xml"} = \%versions;
 			print("config/Localization.xml"." - Updating Database\n");
 		}			
@@ -337,7 +354,7 @@ if (defined($CFG::versiondb{"config/Localization.xml"}))
 } else { 
 	my %versions;
 	$versions{md5} = $md5;
-	$versions{Revision} = $data->{Revision};
+	$versions{Revision} = $fr;
 	$CFG::versiondb{"config/Localization.xml"} = \%versions;
 	print("config/Localization.xml"." - Adding new file to Database\n");
 }
@@ -350,6 +367,7 @@ my $xml = new XML::Simple;
 my $data = $xml->XMLin("config/NotificationCCTypes.xml", KeyAttr => "", ForceArray => [ 'NotificationTypes' ] );
 # do a check of MFS Revision etc 
 my $md5 = digest_file_hex("config/NotificationCCTypes.xml", "SHA-512");
+my $fr = int $data->{Revision};
 if (defined($CFG::versiondb{"config/NotificationCCTypes.xml"}))
 	{
 	if ($CFG::versiondb{"config/NotificationCCTypes.xml"}{md5} != $md5) 
@@ -359,13 +377,13 @@ if (defined($CFG::versiondb{"config/NotificationCCTypes.xml"}))
 		if ($dbr ge $fr )
 		{
 			print "config/NotificationCCTypes.xml"." - md5 does not match Database - Database Revision:";
-			print $CFG::versiondb{"config/NotificationCCTypes.xml"}->{Revision}." File Revision:".int $data->{Revision};
+			print $CFG::versiondb{"config/NotificationCCTypes.xml"}->{Revision}." File Revision:".$fr;
 			print "\n";
 			LogError("config/NotificationCCTypes.xml", 8, "Revision Number Was Not Bumped");	
 		} else {
 			my %versions;
 			$versions{md5} = $md5;
-			$versions{Revision} = $data->{Revision};
+			$versions{Revision} = $fr;
 			$CFG::versiondb{"config/NotificationCCTypes.xml"} = \%versions;
 			print("config/NotificationCCTypes.xml"." - Updating Database\n");
 		}			
@@ -373,7 +391,7 @@ if (defined($CFG::versiondb{"config/NotificationCCTypes.xml"}))
 } else { 
 	my %versions;
 	$versions{md5} = $md5;
-	$versions{Revision} = $data->{Revision};
+	$versions{Revision} = $fr;
 	$CFG::versiondb{"config/NotificationCCTypes.xml"} = \%versions;
 	print("config/NotificationCCTypes.xml"." - Adding new file to Database\n");
 }
@@ -386,6 +404,7 @@ sub CheckSensorMultiLevelCCTypes {
     my $data = $xml->XMLin("config/SensorMultiLevelCCTypes.xml", KeyAttr => "", ForceArray => [ 'SensorTypes' ] );
     # do a check of MFS Revision etc
     my $md5 = digest_file_hex("config/SensorMultiLevelCCTypes.xml", "SHA-512");
+	my $fr = int $data->{Revision};
     if (defined($CFG::versiondb{"config/SensorMultiLevelCCTypes.xml"}))
     {
         if ($CFG::versiondb{"config/SensorMultiLevelCCTypes.xml"}{md5} != $md5)
@@ -395,13 +414,13 @@ sub CheckSensorMultiLevelCCTypes {
             if ($dbr ge $fr )
             {
                 print "config/SensorMultiLevelCCTypes.xml"." - md5 does not match Database - Database Revision:";
-                print $CFG::versiondb{"config/SensorMultiLevelCCTypes.xml"}->{Revision}." File Revision:".int $data->{Revision};
+                print $CFG::versiondb{"config/SensorMultiLevelCCTypes.xml"}->{Revision}." File Revision:".$fr;
                 print "\n";
                 LogError("config/SensorMultiLevelCCTypes.xml", 8, "Revision Number Was Not Bumped");
             } else {
                 my %versions;
                 $versions{md5} = $md5;
-                $versions{Revision} = $data->{Revision};
+                $versions{Revision} = $fr;
                 $CFG::versiondb{"config/SensorMultiLevelCCTypes.xml"} = \%versions;
                 print("config/SensorMultiLevelCCTypes.xml"." - Updating Database\n");
             }
@@ -409,7 +428,7 @@ sub CheckSensorMultiLevelCCTypes {
     } else {
         my %versions;
         $versions{md5} = $md5;
-        $versions{Revision} = $data->{Revision};
+        $versions{Revision} = $fr;
         $CFG::versiondb{"config/SensorMultiLevelCCTypes.xml"} = \%versions;
         print("config/SensorMultiLevelCCTypes.xml"." - Adding new file to Database\n");
     }
@@ -635,4 +654,6 @@ if ($errorsize == 0)
 	open my $FH, '>', 'cpp/build/testconfigversions.cfg';
 	print $FH Data::Dumper->Dump([\%CFG::versiondb], ['*versiondb']);
 	close $FH;	
+} else {
+	exit 1;
 }
