@@ -311,12 +311,12 @@ namespace OpenZWave
 								if ((size_t) item.m_value < (sizeof(c_modeName) / sizeof(*c_modeName)))
 								{
 									item.m_label = c_modeName[item.m_value];
-									Log::Write(LogLevel_Info, GetNodeId(), "    Added mode: %s", c_modeName[item.m_value].c_str());
+									Log::Write(LogLevel_Info, GetNodeId(), "    Added mode: %s", c_modeName[item.m_value]);
 								}
 								else
 								{
-									item.m_label = std::string("Unknown " + itoa(item.m_value)).c_str();
-									Log::Write(LogLevel_Info, GetNodeId(), "    Added unknown mode 0x%x", item.m_value.c_str());
+									item.m_label = "Unknown " + std::to_string(item.m_value);
+									Log::Write(LogLevel_Info, GetNodeId(), "    Added unknown mode 0x%x", item.m_value);
 								}
 								m_supportedModes.push_back(item);
 							}
