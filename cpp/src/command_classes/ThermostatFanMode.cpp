@@ -55,7 +55,7 @@ namespace OpenZWave
 			};
 
 			static std::string const c_modeName[] =
-			{ "Auto Low", "On Low", "Auto High", "On High", "Unknown 4", "Unknown 5", "Circulate", "Unknown" };
+			{ "Auto Low", "On Low", "Auto High", "High", "Auto Medium", "Medium", "Circulation", "Humidity Circulation", "Left & Right", "Up & Down", "Quiet", "External Circulation" };
 
 //-----------------------------------------------------------------------------
 // <ThermostatFanMode::ReadXML>
@@ -250,27 +250,26 @@ namespace OpenZWave
 					Log::Write(LogLevel_Info, GetNodeId(), "Received supported thermostat fan modes");
 
 					m_supportedModes.clear();
-					for (uint32 i = 1; i < _length - 1; ++i)
+					for (uint32 i = 0; i < (_length - 1); ++i)
 					{
 						for (int32 bit = 0; bit < 8; ++bit)
 						{
-							if ((_data[i] & (1 << bit)) != 0)
+							if ((_data[i + 1] & (1 << bit)) != 0)
 							{
 								Internal::VC::ValueList::Item item;
-								item.m_value = (int32) ((i - 1) << 3) + bit;
+								item.m_value = ((int32) bit) + (i * 8);
 
-								/* Minus 1 here as the Unknown Entry is our addition */
-								if ((size_t) item.m_value >= (sizeof(c_modeName) / sizeof(*c_modeName) - 1))
+								if ((size_t) item.m_value < (sizeof(c_modeName) / sizeof(*c_modeName)))
 								{
-									Log::Write(LogLevel_Info, GetNodeId(), "Received unknown fan mode: 0x%x", item.m_value);
+									item.m_label = c_modeName[item.m_value];
+									Log::Write(LogLevel_Info, GetNodeId(), "    Added fan mode: %s", c_modeName[item.m_value].c_str());
 								}
 								else
 								{
-									item.m_label = c_modeName[item.m_value];
-									m_supportedModes.push_back(item);
-
-									Log::Write(LogLevel_Info, GetNodeId(), "    Added fan mode: %s", c_modeName[item.m_value].c_str());
+									item.m_label = std::string("Unknown " + itoa(item.m_value)).c_str();
+									Log::Write(LogLevel_Info, GetNodeId(), "    Added unknown fan mode 0x%x", item.m_value.c_str());
 								}
+								m_supportedModes.push_back(item);
 							}
 						}
 					}

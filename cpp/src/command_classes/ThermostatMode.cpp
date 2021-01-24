@@ -300,30 +300,29 @@ namespace OpenZWave
 					Log::Write(LogLevel_Info, GetNodeId(), "Received supported thermostat modes");
 
 					m_supportedModes.clear();
-					for (uint32 i = 1; i < _length - 1; ++i)
+					for (uint32 i = 0; i < (_length - 1); ++i)
 					{
 						for (int32 bit = 0; bit < 8; ++bit)
 						{
-							if ((_data[i] & (1 << bit)) != 0)
+							if ((_data[i + 1] & (1 << bit)) != 0)
 							{
 								Internal::VC::ValueList::Item item;
-								item.m_value = (int32) ((i - 1) << 3) + bit;
-								/* minus 1 in the sizeof calc here, as the Unknown entry is our addition */
-								if ((size_t) item.m_value >= (sizeof(c_modeName) / sizeof(*c_modeName) - 1))
+								item.m_value = ((int32) bit) + (i * 8);
+								if ((size_t) item.m_value < (sizeof(c_modeName) / sizeof(*c_modeName)))
 								{
-									Log::Write(LogLevel_Info, GetNodeId(), "Received unknown thermostat mode: 0x%x", item.m_value);
+									item.m_label = c_modeName[item.m_value];
+									Log::Write(LogLevel_Info, GetNodeId(), "    Added mode: %s", c_modeName[item.m_value].c_str());
 								}
 								else
 								{
-									item.m_label = c_modeName[item.m_value];
-									m_supportedModes.push_back(item);
-
-									Log::Write(LogLevel_Info, GetNodeId(), "    Added mode: %s", c_modeName[item.m_value]);
+									item.m_label = std::string("Unknown " + itoa(item.m_value)).c_str();
+									Log::Write(LogLevel_Info, GetNodeId(), "    Added unknown mode 0x%x", item.m_value.c_str());
 								}
+								m_supportedModes.push_back(item);
 							}
 						}
 					}
-					/* at this stage, we don't know the Actual Mode of the Fan, so set it to the lowest 
+					/* at this stage, we don't know the Actual Mode, so set it to the lowest 
 					 * value... If not, set to 0, which possibly could be invalid... 
 					 */
 					if (!m_supportedModes.empty()) {
