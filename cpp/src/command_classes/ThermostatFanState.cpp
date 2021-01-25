@@ -49,8 +49,7 @@ namespace OpenZWave
 			};
 
 			static char const* c_stateName[] =
-			{ "Idle", "Running", "Running High", "State 03",			// Undefined states.  May be used in the future.
-					"State 04", "State 05", "State 06", "State 07", "State 08", "State 09", "State 10", "State 11", "State 12", "State 13", "State 14", "State 15", };
+			{ "Idle", "Running", "Running High", "Running Medium", "Circulation Mode", "Humidity Circulation Mode", "Right - Left Circulation Mode", "Up - Down Circulation Mode", "Quiet Circulation Mode" };
 
 //-----------------------------------------------------------------------------
 // <ThermostatFanState::RequestState>
@@ -108,9 +107,19 @@ namespace OpenZWave
 						/* No need bounds checking as the state can only be a single byte - No larger than our Char array anyway */
 						uint8 state = (_data[1] & 0x0f);
 
-						valueString->OnValueRefreshed(c_stateName[state]);
+						std::string statename;
+
+						if (state < (sizeof(c_stateName) / sizeof(*c_stateName)))
+						{
+							statename = c_stateName[state];
+						}
+						else
+						{
+							statename = "Unknown " + std::to_string(state);
+						}
+						valueString->OnValueRefreshed(statename);
 						valueString->Release();
-						Log::Write(LogLevel_Info, GetNodeId(), "Received thermostat fan state: %s", valueString->GetValue().c_str());
+						Log::Write(LogLevel_Info, GetNodeId(), "Received thermostat fan state: %s", statename.c_str());
 					}
 					return true;
 				}

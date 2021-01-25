@@ -175,11 +175,11 @@ namespace OpenZWave
 						Log::Write(LogLevel_Info, GetNodeId(), "Received supported thermostat setpoints");
 
 						// Parse the data for the supported setpoints
-						for (uint32 i = 1; i < _length - 1; ++i)
+						for (uint32 i = 0; i < (_length - 1); ++i)
 						{
 							for (int32 bit = 0; bit < 8; ++bit)
 							{
-								if ((_data[i] & (1 << bit)) != 0)
+								if ((_data[i + 1] & (1 << bit)) != 0)
 								{
 									if (GetVersion() >= 3)
 									{
@@ -190,7 +190,7 @@ namespace OpenZWave
 										msg->Append(3);
 										msg->Append(GetCommandClassId());
 										msg->Append(ThermostatSetpointCmd_CapabilitiesGet);
-										uint8 type = ((i - 1) << 3) + bit;
+										uint8 type = (i * 8) + bit;
 										if (m_com.GetFlagBool(COMPAT_FLAG_TSSP_ALTTYPEINTERPRETATION) == false)
 										{
 											// for interpretation A the setpoint identifier makes a jump of 4 after the 2nd bit ... wtf @ zensys
@@ -204,7 +204,7 @@ namespace OpenZWave
 										GetDriver()->SendMsg(msg, OpenZWave::Driver::MsgQueue_Query);
 									}
 
-									uint8 type = ((i - 1) << 3) + bit;
+									uint8 type = (i * 8) + bit;
 									if (m_com.GetFlagBool(COMPAT_FLAG_TSSP_ALTTYPEINTERPRETATION) == false)
 									{
 										// for interpretation A the setpoint identifier makes a jump of 4 after the 2nd bit ... wtf @ zensys
@@ -214,14 +214,19 @@ namespace OpenZWave
 										}
 									}
 									int32 index = (int32) type + m_com.GetFlagByte(COMPAT_FLAG_TSSP_BASE);
+									string setpointName;
 									// Add supported setpoint
-									if (index < ThermostatSetpoint_Count)
+									if (index < (sizeof(c_setpointName) / sizeof(*c_setpointName)))
 									{
-										string setpointName = c_setpointName[index];
-
-										node->CreateValueDecimal(ValueID::ValueGenre_User, GetCommandClassId(), _instance, index, setpointName, "C", false, false, "0.0", 0);
-										Log::Write(LogLevel_Info, GetNodeId(), "    Added setpoint: %s", setpointName.c_str());
+										setpointName = c_setpointName[index];
 									}
+									else 
+									{
+										setpointName = "Unknown_" + std::to_string(index);
+									}
+
+									node->CreateValueDecimal(ValueID::ValueGenre_User, GetCommandClassId(), _instance, index, setpointName, "C", false, false, "0.0", 0);
+									Log::Write(LogLevel_Info, GetNodeId(), "    Added setpoint: %s", setpointName.c_str());
 								}
 							}
 						}
@@ -235,25 +240,31 @@ namespace OpenZWave
 					if (Node* node = GetNodeUnsafe())
 					{
 						// We have received the capabilities for supported setpoint Type
-						uint8 scale;
-						uint8 precision = 0;
+						uint8 minscale;
+						uint8 maxscale;
+						uint8 minprecision = 0;
+						uint8 maxprecision = 0; 
 						uint8 size = _data[2] & 0x07;
-						string minValue = ExtractValue(&_data[2], &scale, &precision);
-						string maxValue = ExtractValue(&_data[2 + size + 1], &scale, &precision);
+						string minValue = ExtractValue(&_data[2], &minscale, &minprecision);
+						string maxValue = ExtractValue(&_data[2 + size + 1], &maxscale, &maxprecision);
 
 						Log::Write(LogLevel_Info, GetNodeId(), "Received capabilities of thermostat setpoint type %d, min %s max %s", (int) _data[1], minValue.c_str(), maxValue.c_str());
 
 						uint8 index = _data[1];
+						string setpointName;
 						// Add supported setpoint
-						if (index < ThermostatSetpoint_Count)
+						if (index < (sizeof(c_setpointName) / sizeof(*c_setpointName)))
 						{
-							string setpointName = c_setpointName[index];
-
-							node->CreateValueDecimal(ValueID::ValueGenre_User, GetCommandClassId(), _instance, ValueID_Index_ThermostatSetpoint::Unused_0_Minimum + index, setpointName + "_minimum", "C", false, false, minValue, 0);
-							node->CreateValueDecimal(ValueID::ValueGenre_User, GetCommandClassId(), _instance, ValueID_Index_ThermostatSetpoint::Unused_0_Maximum + index, setpointName + "_maximum", "C", false, false, maxValue, 0);
-							Log::Write(LogLevel_Info, GetNodeId(), "    Added setpoint: %s", setpointName.c_str());
+							setpointName = c_setpointName[index];
+						}
+						else 
+						{
+							setpointName = "Unknown_" + std::to_string(index);
 						}
 
+						node->CreateValueDecimal(ValueID::ValueGenre_User, GetCommandClassId(), _instance, ValueID_Index_ThermostatSetpoint::Unused_0_Minimum + index, setpointName + "_minimum", minscale ? "F" : "C", false, false, minValue, 0);
+						node->CreateValueDecimal(ValueID::ValueGenre_User, GetCommandClassId(), _instance, ValueID_Index_ThermostatSetpoint::Unused_0_Maximum + index, setpointName + "_maximum", maxscale ? "F" : "C", false, false, maxValue, 0);
+						Log::Write(LogLevel_Info, GetNodeId(), "    Added setpoint: %s", setpointName.c_str());
 					}
 				}
 
