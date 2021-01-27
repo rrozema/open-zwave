@@ -190,7 +190,7 @@ namespace OpenZWave
 										msg->Append(3);
 										msg->Append(GetCommandClassId());
 										msg->Append(ThermostatSetpointCmd_CapabilitiesGet);
-										uint8_t type = (i * 8) + bit;
+										uint8 type = (i * 8) + bit;
 										if (m_com.GetFlagBool(COMPAT_FLAG_TSSP_ALTTYPEINTERPRETATION) == false)
 										{
 											// for interpretation A the setpoint identifier makes a jump of 4 after the 2nd bit ... wtf @ zensys
@@ -204,7 +204,7 @@ namespace OpenZWave
 										GetDriver()->SendMsg(msg, OpenZWave::Driver::MsgQueue_Query);
 									}
 
-									uint8_t type = (i * 8) + bit;
+									uint8 type = (i * 8) + bit;
 									if (m_com.GetFlagBool(COMPAT_FLAG_TSSP_ALTTYPEINTERPRETATION) == false)
 									{
 										// for interpretation A the setpoint identifier makes a jump of 4 after the 2nd bit ... wtf @ zensys
@@ -213,7 +213,7 @@ namespace OpenZWave
 											type += 4;
 										}
 									}
-									uint8_t index = (uint8_t) type + m_com.GetFlagByte(COMPAT_FLAG_TSSP_BASE);
+									int32 index = (int32) type + m_com.GetFlagByte(COMPAT_FLAG_TSSP_BASE);
 									string setpointName;
 									// Add supported setpoint
 									if (index < (sizeof(c_setpointName) / sizeof(*c_setpointName)))
@@ -250,7 +250,7 @@ namespace OpenZWave
 
 						Log::Write(LogLevel_Info, GetNodeId(), "Received capabilities of thermostat setpoint type %d, min %s max %s", (int) _data[1], minValue.c_str(), maxValue.c_str());
 
-						uint8_t index = _data[1];
+						uint8 index = _data[1];
 						string setpointName;
 						// Add supported setpoint
 						if (index < (sizeof(c_setpointName) / sizeof(*c_setpointName)))
