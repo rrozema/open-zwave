@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Product xmlns='https://github.com/OpenZWave/open-zwave' Revision="1">
+<Product xmlns='https://github.com/OpenZWave/open-zwave' Revision="3">
   <!--MCOHome Touch Panel Dimmer Switch MH-DT411 
-	type=d411, id=5102	Unknown: id=015f	0x5102	0xd411
+    type=d411, id=5102	Unknown: id=015f	0x5102	0xd411
   -->
   <MetaData>
     <MetaDataItem name="Name">Dimmer Switch MH-DT411</MetaDataItem>
     <MetaDataItem name="Description">Dimmer switch is a wall panel built-in with Z-Wave Plus module. With it's stylish design and stable performance, the panel can be used to control the light level. It supports basic command class, multi channel command class and multi channel association command class, also works as a repeater in a Z-Wave network. This product can be included and operated in any Z-Wave network with other Z-Wave certified devices from any other manufacturers.</MetaDataItem>
-    <MetaDataItem name="OzwInfoPage">http://www.openzwave.com/device-database/XXXX:YYYY:ZZZZ</MetaDataItem>
+    <MetaDataItem name="OzwInfoPage">http://www.openzwave.com/device-database/015f:5102:d411</MetaDataItem>
     <MetaDataItem name="ProductPage">http://www.mcohome.com/ProductDetail/3894312.html</MetaDataItem>
     <MetaDataItem name="ProductSupport">http://www.mcohome.com/ProductDetail/3894312.html</MetaDataItem>
+    <MetaDataItem name="ProductPic">images/mcohome/015f_5102_d411.png</MetaDataItem>
     <MetaDataItem name="InclusionDescription">Set controller into inclusion mode and press 3 clicks on '+' button to include. If succeeded, green led flashes 4 times.</MetaDataItem>
     <MetaDataItem name="ExclusionDescription">Set controller into exclusion mode and press 3 clicks on '-' button to exclude. If succeeded, green led flashes 4 times.</MetaDataItem>
     <MetaDataItem name="ResetDescription">Press 10 times of any button or exclude the device from Z-Wave network, then cut off the main power. The factory setting will be restored.</MetaDataItem>
+    <MetaDataItem id="015f" name="FrequencyName" type="015f">CEPT (Europe)</MetaDataItem>
     <ChangeLog>
       <Entry author="rrozema - richard@uitdelft.nl" date="16 November 2020" revision="1">Information retrieved from manual pages delivered with the product. No revision or date on the manual.</Entry>
       <Entry author="rrozema - richard@uitdelft.nl" date="18 November 2020" revision="2">Fixed option 17. Enabled and Disabled where interchanged.</Entry>
@@ -120,10 +122,10 @@
   <!-- Association Groups -->  
   <CommandClass id="133">
     <Associations num_groups="4">
-      <Group index="1" max_associations="1" label="Lifeline" auto="true"/>
-      <Group index="2" max_associations="5" label="Send Switch Multilevel to associated devices" auto="false"/>
-      <Group index="3" max_associations="5" label="Send Basic Set to associated devices on key '+'" auto="false"/>
-      <Group index="4" max_associations="5" label="Send Basic Set to associated devices on key '-'" auto="false"/>
+      <Group index="1" max_associations="1" label="Lifeline"/>
+      <Group index="2" max_associations="5" label="Send Switch Multilevel to associated devices"/>
+      <Group index="3" max_associations="5" label="Send Basic Set to associated devices on key '+'"/>
+      <Group index="4" max_associations="5" label="Send Basic Set to associated devices on key '-'"/>
     </Associations>
   </CommandClass>
 </Product>
