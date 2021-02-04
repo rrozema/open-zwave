@@ -65,3 +65,4 @@ cpp/build/windows/vs2010/.vs/OpenZWave/v16/Browse.VC.opendb
 cpp/build/windows/vs2010/.vs/OpenZWave/v16/ipch/AutoPCH/1a93477d78a9dafa/THERMOSTATMODE.ipch
 cpp/build/windows/vs2010/.vs/OpenZWave/v16/ipch/AutoPCH/9e1242a95cf01e57/THERMOSTATFANMODE.ipch
 cpp/build/windows/vs2010/GIT-VS-VERSION-FILE
+*.ipch
