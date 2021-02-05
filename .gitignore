@@ -66,3 +66,4 @@ cpp/build/windows/vs2010/.vs/OpenZWave/v16/ipch/AutoPCH/1a93477d78a9dafa/THERMOS
 cpp/build/windows/vs2010/.vs/OpenZWave/v16/ipch/AutoPCH/9e1242a95cf01e57/THERMOSTATFANMODE.ipch
 cpp/build/windows/vs2010/GIT-VS-VERSION-FILE
 *.ipch
+cpp/build/windows/vs2010/OpenZWave.vcxproj.filters
