@@ -256,7 +256,7 @@ namespace OpenZWave
 				if (ThermostatModeCmd_Report == (ThermostatModeCmd) _data[0])
 				{
 					uint8 mode = _data[1] & 0x1f;
-					uint8 noOfFields = (_data[1] & 0xe0) >> 5;	// Must be set to 0 for all modes but manufacturer_specific (0x1f). For 0x1f it
+					//uint8 noOfFields = (_data[1] & 0xe0) >> 5;	// Must be set to 0 for all modes but manufacturer_specific (0x1f). For 0x1f it
 																// it is the number of bytes of manufacturer specific data following from byte 2
 																// (4.109.4).
 					bool validMode = false;
