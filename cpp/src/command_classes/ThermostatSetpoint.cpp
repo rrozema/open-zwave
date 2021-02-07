@@ -216,7 +216,7 @@ namespace OpenZWave
 									int32 index = (int32) type + m_com.GetFlagByte(COMPAT_FLAG_TSSP_BASE);
 									string setpointName;
 									// Add supported setpoint
-									if (index < (sizeof(c_setpointName) / sizeof(*c_setpointName)))
+									if (static_cast<size_t>(index) < (sizeof(c_setpointName) / sizeof(*c_setpointName)))
 									{
 										setpointName = c_setpointName[index];
 									}
