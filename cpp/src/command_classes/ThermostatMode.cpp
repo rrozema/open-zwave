@@ -125,9 +125,9 @@ namespace OpenZWave
 								int index;
 								if (TIXML_SUCCESS == modeElement->QueryIntAttribute("index", &index))
 								{
-									if (index > ThermostatMode_Count)
+									if (index >= ThermostatMode_Count)
 									{
-										Log::Write(LogLevel_Warning, GetNodeId(), "index Value in XML was greater than range. Setting to Invalid");
+										Log::Write(LogLevel_Error, GetNodeId(), "index Value in XML was greater than range. Setting to Invalid");
 										index = ThermostatMode_Count + 1;
 									}
 									Internal::VC::ValueList::Item item;
@@ -256,6 +256,9 @@ namespace OpenZWave
 				if (ThermostatModeCmd_Report == (ThermostatModeCmd) _data[0])
 				{
 					uint8 mode = _data[1] & 0x1f;
+					uint8 noOfFields = (_data[1] & 0xe0) >> 5;	// Must be set to 0 for all modes but manufacturer_specific (0x1f). For 0x1f it
+																// it is the number of bytes of manufacturer specific data following from byte 2
+																// (4.109.4).
 					bool validMode = false;
 					for (vector<Internal::VC::ValueList::Item>::iterator it = m_supportedModes.begin(); it != m_supportedModes.end(); ++it)
 					{
@@ -287,12 +290,12 @@ namespace OpenZWave
 					}
 					else
 					{
-						Log::Write(LogLevel_Warning, GetNodeId(), "Received unknown thermostat mode: index %d", mode);
+						Log::Write(LogLevel_Error, GetNodeId(), "Received unknown thermostat mode: index %d", mode);
 					}
 					return true;
 				}
 
-				if (ThermostatModeCmd_SupportedReport == (ThermostatModeCmd) _data[0])
+				else if (ThermostatModeCmd_SupportedReport == (ThermostatModeCmd) _data[0])
 				{
 					// We have received the supported thermostat modes from the Z-Wave device
 					// these values are used to populate m_supportedModes which, in turn, is used to "seed" the values
