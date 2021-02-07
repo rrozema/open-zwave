@@ -387,7 +387,7 @@ enum Indicator_Property_offset {
 
 						// 3 + IndicatorCount * 3 can not exceed the length of the message received.
 						uint8 indicatorCount = (_data[2] & 0x1F);
-						if (3 + (indicatorCount * 3) > len)
+						if (static_cast<uint32>(3 + (indicatorCount * 3)) > len)
 						{
 							Log::Write(LogLevel_Error, GetNodeId(), "Indicator Report V2+: Indicator count %u exceeds available buffer size %u.", indicatorCount, len);
 							indicatorCount = (len / 3) - 1;
