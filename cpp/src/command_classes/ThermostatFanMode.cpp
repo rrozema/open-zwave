@@ -257,7 +257,7 @@ namespace OpenZWave
 							if ((_data[i + 1] & (1 << bit)) != 0)
 							{
 								Internal::VC::ValueList::Item item;
-								item.m_value = ((int32) bit) + (i * 8);
+								item.m_value = ((int32) (i * 8)) + bit;
 
 								if ((size_t) item.m_value < (sizeof(c_modeName) / sizeof(*c_modeName)))
 								{
