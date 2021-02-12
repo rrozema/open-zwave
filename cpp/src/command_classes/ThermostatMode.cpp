@@ -303,9 +303,9 @@ namespace OpenZWave
 					Log::Write(LogLevel_Info, GetNodeId(), "Received supported thermostat modes");
 
 					m_supportedModes.clear();
-					for (uint32 i = 0; i < (_length - 1); ++i)
+					for (uint32 i = 0; i < (_length - 1); i++)
 					{
-						for (int32 bit = 0; bit < 8; ++bit)
+						for (int32 bit = 0; bit < 8; bit++)
 						{
 							if ((_data[i + 1] & (1 << bit)) != 0)
 							{
