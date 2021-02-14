@@ -1013,7 +1013,7 @@ void Node::ReadXML(TiXmlElement const* _node)
 				char* pos = const_cast<char*>(neighbors);
 				while (*pos && i < 29)
 				{
-					m_neighbors[i] = strtol(pos, &pos, 10);
+					m_neighbors[i] = static_cast<uint8>(strtol(pos, &pos, 10));
 					if ((*pos) == ',')
 					{
 						++pos;
