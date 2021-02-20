@@ -70,11 +70,18 @@ namespace OpenZWave
 					// From Value
 					virtual string const GetAsString() const
 					{
-						return GetItem()->m_label;
+						const Item* item = GetItem();
+						if (item)
+							return GetItem()->m_label;
+						else
+							return "";
 					}
 					virtual bool SetFromString(string const& _value)
 					{
-						return SetByLabel(_value);
+						const Item* item = GetItem();
+						if (item)
+							return SetByLabel(_value);
+						return false;
 					}
 					void SetTargetValue(int32 const _target, uint32 _duration = 0);
 
