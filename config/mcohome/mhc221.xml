@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Product xmlns='https://github.com/OpenZWave/open-zwave' Revision="1">
+  <!--MCOHome Micro Shutter Switch MH-C221 
+	type=c221, id=5102	Unknown: id=015f	0x5102	0xd411
+  -->
+  <MetaData>
+    <MetaDataItem name="Name">Micro Shutter Switch MH-C221</MetaDataItem>
+    <MetaDataItem name="Description">Micro Shutter switch is a Z-Wave Plus enabled module that can be set in existing in-wall switches. The module can be used to wire roller shutter which is controlled by AC motor (with limit). It also works as a repeater in a Z-Wave network. This product can be included and operated in any Z-Wave network with other Z-Wave certified devices from any other manufacturers.</MetaDataItem>
+    <MetaDataItem name="OzwInfoPage">http://www.openzwave.com/device-database/XXXX:YYYY:ZZZZ</MetaDataItem>
+    <MetaDataItem name="ProductPage">http://www.mcohome.com/ProductDetail/3897786.html</MetaDataItem>
+    <MetaDataItem name="ProductSupport">http://www.mcohome.com/ProductDetail/3897786.html</MetaDataItem>
+    <MetaDataItem name="ProductPic">mcohome/mhc211.png</MetaDataItem>
+    <MetaDataItem name="InclusionDescription">Set controller into inclusion mode. Press the momentary button on the module or on external panel 3 times in quick succession or hold the button 8s. If successful, the indicator led will blink 3 times.</MetaDataItem>
+    <MetaDataItem name="ExclusionDescription">Set controller into exclusion mode. Press the momentary button on the module or on external panel 3 times in quick succession or hold the button 8s. If successful, the indicator led will blink 3 times.</MetaDataItem>
+    <MetaDataItem name="ResetDescription">Press 10 times of external button or exclude the device from Z-Wave network, then cut off the main power. The factory setting will be restored.</MetaDataItem>
+    <ChangeLog>
+      <Entry author="rrozema - richard@uitdelft.nl" date="8 February 2021" revision="1">Information retrieved from manual pages delivered with the product. No revision or date on the manual.</Entry>
+    </ChangeLog>
+  </MetaData>
+  
+  <!-- Configuration -->
+  <CommandClass id="112">    
+    <Value genre="config" instance="1" index="1" label="Watt meter report period" type="short" units="5 sec" min="1" max="32767" value="720">
+      <Help>Valid values: 1 - 32767. Unit = 5 seconds: so 5 * 720s = 3600s = 1 hour.</Help>
+    </Value>
+    <Value genre="config" instance="1" index="2" label="kWH meter report period" type="short" units="10 min" min="1" max="32767" value="6">
+      <Help>Valid values: 1 - 32767. Unit = 10 minutes: so 6 * 10 min = 1 hour.</Help>
+    </Value>
+    <Value genre="config" instance="1" index="3" label="Threshold for current load warning" type="short" units="0.01 A" min="10" max="500" value="500">
+      <Help>If current exceeds this value an alarm notification is sent on the lifeline group.</Help>
+    </Value>
+    <Value genre="config" instance="1" index="4" label="Threshold for kWH for load warning" type="short" min="1" max="10000" value="10000">
+      <Help>If usage exceeds this value an alarm notification is sent on the lifeline group.</Help>
+    </Value>
+    <Value genre="config" instance="1" index="5" label="Level report mode" type="list" size="1" value="2">
+      <Help>When to send a level report to the controller. 1: Report destination level when requested by the gateway and then report current level after 5 seconds. 2: Report every 10% level change while running.</Help>
+      <Item label="Report destination level" value="1"/>
+      <Item label="Report every 10% level change when running" value="2"/>
+    </Value>
+    <Value genre="config" instance="1" index="7" label="Demo trip" type="list" size="1" value="1">
+      <Help>1: activate demo trip when first touch of the button. Read motor data.</Help>
+      <Item label="Disabled" value="0"/>
+      <Item label="Activate demo trip upon first button touch" value="1"/>
+    </Value>
+    <Value genre="config" instance="1" index="9" label="Demo trip and calibration" type="list" size="1" value="0">
+      <Help>1: activate demo trip and calibration.</Help>
+      <Item label="Disabled" value="0"/>
+      <Item label="Activate demo trip and calibration" value="1"/>
+    </Value>
+    <Value genre="config" instance="1" index="9" label="Calibration" type="list" size="1" value="0">
+      <Help>1: activate calibration only.</Help>
+      <Item label="Disabled" value="0"/>
+      <Item label="Activate calibration" value="1"/>
+    </Value>
+    <Value genre="config" instance="1" index="11" label="Min level of the shutter close" type="byte" min="0" max="98" units="%" value="0">
+      <Help>Must always be lower than Maximum (option 12).</Help>
+    </Value>
+    <Value genre="config" instance="1" index="12" label="Max level of the shutter open" type="byte" min="1" max="99" units="%" value="0">
+      <Help>Must always be higher than Minimum (option 11).</Help>
+    </Value>
+    <Value genre="config" instance="1" index="13" label="External switch type" type="list" size="1" value="0">
+      <Help>0 = Button (momentary switches). 1 = Toggle (2-state switches) with On position = shutter open. 2 = Toggle (2-state switches) with On position = shutter close.</Help>
+      <Item label="Button (momentary switches)" value="0"/>
+      <Item label="Toggle with On = Open" value="1"/>
+      <Item label="Toggle with On = Close" value="2"/>
+    </Value>
+    <Value genre="config" instance="1" index="14" label="External switch input" type="list" size="1" value="1">
+      <Help>0 = No external switch. 1 = wire 1 ex. momentary or toggle key to S1 only. 2 = wire 1 ex. momentary or toggle key to S2 Only. 3: wire 2 ex. momentary or toggle keys to S1 and S2, each key can control both directions. 4: wire 2 ex. momentary or toggle keys to S1 and S2, each key control one direction.</Help>
+      <Item label="No external switch" value="0"/>
+      <Item label="S1 only" value="1"/>
+      <Item label="S2 only" value="2"/>
+      <Item label="S1 and S2, each controls both directions" value="3"/>
+      <Item label="S1 and S2, each controls one direction" value="4"/>
+    </Value>
+    <Value genre="config" instance="1" index="255" label="Factory reset" type="list" size="1" value="0">
+      <Help>Restore factory settings (write only). Default value = Disabled.</Help>
+      <Item label="Disabled" value="0"/>
+      <Item label="Factory reset" value="85"/>
+    </Value>
+  </CommandClass>
+        
+  <!-- Association Groups -->  
+  <CommandClass id="133">
+    <Associations num_groups="1">
+      <Group index="1" max_associations="1" label="Lifeline"/>
+    </Associations>
+  </CommandClass>
+</Product>

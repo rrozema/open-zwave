@@ -282,7 +282,7 @@ enum Indicator_Property_offset {
 						msg->Append(3);
 						msg->Append(GetCommandClassId());
 						msg->Append(IndicatorCmd_Get);
-						msg->Append(index);
+						msg->Append((const uint8)index);
 						msg->Append(GetDriver()->GetTransmitOptions());
 						GetDriver()->SendMsg(msg, _queue);
 						return true;
@@ -354,34 +354,72 @@ enum Indicator_Property_offset {
 				}
 				if (IndicatorCmd_Report == (IndicatorCmd) _data[0])
 				{
-					if (GetVersion() == 1) { 
-						Log::Write(LogLevel_Info, GetNodeId(), "Received an Indicator report: Indicator=%d", _data[1]);
+					if (_length < 2) 
+					{	// invalid length.
+						Log::Write(LogLevel_Error, GetNodeId(), "Indicator Report with invalid length %u.", _length);
+						return true;
+					}
+					else if (GetVersion() <= 1 || _length < 6 || (_data[2] & 0x1F) == 0)
+					{	/* Indicator Version 1: only Indicator 0 Value is supported.
+						 * Indicator Version 2+: 4.24.5: "Indicator 0 Value: A version 2 controlling node MUST 
+						 * ignore the Indicator 0 Value field if other values are advertised."
+						 */
+						Log::Write(LogLevel_Info, GetNodeId(), "Indicator Report V1: Indicator=%d", _data[1]);
+
 						if (Internal::VC::ValueByte* value = static_cast<Internal::VC::ValueByte*>(GetValue(_instance, ValueID_Index_Indicator::Indicator)))
 						{
 							value->OnValueRefreshed(_data[1]);
 							value->Release();
 						}
 						return true;
-					} else {
-						uint8 size = (_data[2] & 0x1F);
+					}
+					else
+					{	// Indicator Version 2+.
+						Log::Write(LogLevel_Info, GetNodeId(), "Indicator Report V2+.");
+						uint32 len = _length;
+
+						// Every Indicator MUST have an Indicator ID, Property ID AND Value. 
+						// Ignore any incomplete last set.
+						if (len % 3 != 0) {
+							len -= len % 3;
+							Log::Write(LogLevel_Error, GetNodeId(), "Indicator Report V2+: invalid length. Adjusted length from %u to %u.", _length, len);
+						}
+
+						// 3 + IndicatorCount * 3 can not exceed the length of the message received.
+						uint8 indicatorCount = (_data[2] & 0x1F);
+						if (static_cast<uint32>(3 + (indicatorCount * 3)) > len)
+						{
+							Log::Write(LogLevel_Error, GetNodeId(), "Indicator Report V2+: Indicator count %u exceeds available buffer size %u.", indicatorCount, len);
+							indicatorCount = (len / 3) - 1;
+						}
+
 						uint8 setid = 0;
 						uint8 setparam = 0;
-						for (int i = 0; i < size; i++) 
-						{
-							uint8 id = _data[3 + (i*3)];
-							uint8 property = _data[4 + (i*3)];
-							uint8 value = _data[5 + (i*3)];
-							Log::Write(LogLevel_Info, GetNodeId(), "Indicator Report for %d - Property %d - Value %d", id, property, value);
-							this->setIndicatorValue(id, _instance, property, value);
+						/* FIXME: 4.24.5: "If not all properties are included in the command for the actual Indicator ID, a
+						 * controlling node MUST assume non-specified Property IDs values to be 0x00.".
+						 * Hence, following loop should set all Property IDs, not just the ones we received. Plus,
+						 * if indicatorCount == 0 a loop should be performed over ALL properties to set them to 0x00.
+						 */
+						if (indicatorCount > 0) {
+							uint8 i = 0;
 							/* 4.24.5 - ID Field:
 							 * All indicator objects MUST carry the same Indicator ID.
 							 */
-							if (setid == 0)
-								setid = id;
-							if (value > 0)
-								setparam = property;
+							setid = _data[3];
+							do {
+								uint8 id = _data[3 + (i * 3)];
+								uint8 property = _data[4 + (i * 3)];
+								uint8 value = _data[5 + (i * 3)];
+								if (setid == id)
+									Log::Write(LogLevel_Info, GetNodeId(), "Indicator Report V2+ for %d - Property %d - Value %d", setid, property, value);
+								else
+									Log::Write(LogLevel_Error, GetNodeId(), "Indicator Report V2+ for %d - Property %d - Value %d. All indicator objects MUST carry the same Indicator ID: %d was used instead.", id, property, value, setid);
+								this->setIndicatorValue(setid, _instance, property, value);
+								if (value > 0)
+									setparam = property;
+							} while (++i < indicatorCount);
 						}
-						if (Internal::VC::ValueList* value = static_cast<Internal::VC::ValueList *>(GetValue(_instance, setid)))
+						if (Internal::VC::ValueList* value = static_cast<Internal::VC::ValueList*>(GetValue(_instance, setid)))
 						{
 							bool setTimer = true;
 							if (setparam == Indicator_Property_offset::Multilevel_Prop)
@@ -400,13 +438,13 @@ enum Indicator_Property_offset {
 								value->OnValueRefreshed(Indicator_Property_Group::Timeout_Grp);
 							else if (setparam == Indicator_Property_offset::Sound_Prop)
 								value->OnValueRefreshed(Indicator_Property_Group::Sound_Grp);
-							else 
+							else
 							{
 								value->OnValueRefreshed(0);
 								setTimer = false;
 							}
 							value->Release();
-							if (setTimer) 
+							if (setTimer)
 							{
 								int32 id = setid + (_instance << 16);
 								TimerThread::TimerCallback callback = bind(&Indicator::refreshIndicator, this, id);
@@ -417,7 +455,6 @@ enum Indicator_Property_offset {
 						{
 							Log::Write(LogLevel_Warning, GetNodeId(), "Can't Find ValueID for Indicator %d", setid);
 						}
-
 					}
 					return true;
 				}
@@ -500,7 +537,7 @@ enum Indicator_Property_offset {
 							if (Internal::VC::ValueBool* propertyValue = static_cast<Internal::VC::ValueBool *>(GetValue(_value.GetID().GetInstance(), propertyindex + Indicator_Property_offset::Binary_Prop)))
 							{
 								payload.push_back(1);
-								payload.push_back(index);
+								payload.push_back((const uint8)index);
 								payload.push_back(Indicator_Property_offset::Binary_Prop);
 								payload.push_back(propertyValue->GetValue() == true ? 1 : 0);
 							}
@@ -511,7 +548,7 @@ enum Indicator_Property_offset {
 							if (Internal::VC::ValueByte* propertyValue = static_cast<Internal::VC::ValueByte *>(GetValue(_value.GetID().GetInstance(), propertyindex + Indicator_Property_offset::Multilevel_Prop)))
 							{
 								payload.push_back(1);
-								payload.push_back(index);
+								payload.push_back((const uint8)index);
 								payload.push_back(Indicator_Property_offset::Multilevel_Prop);
 								payload.push_back(propertyValue->GetValue());
 							}
@@ -523,21 +560,21 @@ enum Indicator_Property_offset {
 							if (Internal::VC::ValueByte* propertyValue = static_cast<Internal::VC::ValueByte *>(GetValue(_value.GetID().GetInstance(), propertyindex + Indicator_Property_offset::OnOffPeriod_Prop)))
 							{
 								params++;
-								payload.push_back(index);
+								payload.push_back((const uint8)index);
 								payload.push_back(Indicator_Property_offset::OnOffPeriod_Prop);
 								payload.push_back(propertyValue->GetValue());
 							}
 							if (Internal::VC::ValueByte* propertyValue = static_cast<Internal::VC::ValueByte *>(GetValue(_value.GetID().GetInstance(), propertyindex + Indicator_Property_offset::OnOffCycle_Prop)))
 							{
 								params++;
-								payload.push_back(index);
+								payload.push_back((const uint8)index);
 								payload.push_back(Indicator_Property_offset::OnOffCycle_Prop);
 								payload.push_back(propertyValue->GetValue());
 							}
 							if (Internal::VC::ValueByte* propertyValue = static_cast<Internal::VC::ValueByte *>(GetValue(_value.GetID().GetInstance(), propertyindex + Indicator_Property_offset::OnTimeWithPeriod_Prop)))
 							{
 								params++;
-								payload.push_back(index);
+								payload.push_back((const uint8)index);
 								payload.push_back(Indicator_Property_offset::OnTimeWithPeriod_Prop);
 								payload.push_back(propertyValue->GetValue());
 							}
@@ -550,21 +587,21 @@ enum Indicator_Property_offset {
 							if (Internal::VC::ValueByte* propertyValue = static_cast<Internal::VC::ValueByte *>(GetValue(_value.GetID().GetInstance(), propertyindex + Indicator_Property_offset::Timeout_Min_Prop)))
 							{
 								params++;
-								payload.push_back(index);
+								payload.push_back((const uint8)index);
 								payload.push_back(Indicator_Property_offset::Timeout_Min_Prop);
 								payload.push_back(propertyValue->GetValue());
 							}
 							if (Internal::VC::ValueByte* propertyValue = static_cast<Internal::VC::ValueByte *>(GetValue(_value.GetID().GetInstance(), propertyindex + Indicator_Property_offset::Timeout_Sec_Prop)))
 							{
 								params++;
-								payload.push_back(index);
+								payload.push_back((const uint8)index);
 								payload.push_back(Indicator_Property_offset::Timeout_Sec_Prop);
 								payload.push_back(propertyValue->GetValue());
 							}
 							if (Internal::VC::ValueByte* propertyValue = static_cast<Internal::VC::ValueByte *>(GetValue(_value.GetID().GetInstance(), propertyindex + Indicator_Property_offset::Timeout_Ms_Prop)))
 							{
 								params++;
-								payload.push_back(index);
+								payload.push_back((const uint8)index);
 								payload.push_back(Indicator_Property_offset::Timeout_Ms_Prop);
 								payload.push_back(propertyValue->GetValue());
 							}
@@ -576,7 +613,7 @@ enum Indicator_Property_offset {
 							if (Internal::VC::ValueByte* propertyValue = static_cast<Internal::VC::ValueByte *>(GetValue(_value.GetID().GetInstance(), propertyindex + Indicator_Property_offset::Sound_Prop)))
 							{
 								payload.push_back(1);
-								payload.push_back(index);
+								payload.push_back((const uint8)index);
 								payload.push_back(Indicator_Property_offset::Sound_Prop);
 								payload.push_back(propertyValue->GetValue());
 							}
@@ -592,7 +629,7 @@ enum Indicator_Property_offset {
 					Msg* msg = new Msg("IndicatorCmd_Set_v2", GetNodeId(), REQUEST, FUNC_ID_ZW_SEND_DATA, true);
 					msg->SetInstance(this, _value.GetID().GetInstance());
 					msg->Append(GetNodeId());
-					msg->Append(3 + payload.size());
+					msg->Append(3 + (uint8)payload.size());
 					msg->Append(GetCommandClassId());
 					msg->Append(IndicatorCmd_Set);
 					msg->Append(0);

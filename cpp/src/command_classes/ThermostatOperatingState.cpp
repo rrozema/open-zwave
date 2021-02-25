@@ -49,8 +49,8 @@ namespace OpenZWave
 			};
 
 			static char const* c_stateName[] =
-			{ "Idle", "Heating", "Cooling", "Fan Only", "Pending Heat", "Pending Cool", "Vent / Economizer", "State 07",				// Undefined states.  May be used in the future.
-					"State 08", "State 09", "State 10", "State 11", "State 12", "State 13", "State 14", "State 15" };
+			{ "Idle", "Heating", "Cooling", "Fan Only", "Pending Heat", "Pending Cool", "Vent / Economizer", "Aux Heating",
+					"2nd Stage Heating", "2nd Stage Cooling", "2nd Stage Aux Heating", "3rd Stage Aux Heating" };
 
 //-----------------------------------------------------------------------------
 // <ThermostatOperatingState::RequestState>
@@ -103,10 +103,19 @@ namespace OpenZWave
 					// We have received the thermostat operating state from the Z-Wave device
 					if (Internal::VC::ValueString* valueString = static_cast<Internal::VC::ValueString*>(GetValue(_instance, ValueID_Index_ThermostatOperatingState::OperatingState)))
 					{
-						/* no need bounds checking on c_stateName here, as it can only be 1 Byte anyway */
-						valueString->OnValueRefreshed(c_stateName[_data[1] & 0x0f]);
+						uint8 index = _data[1] & 0x0f;
+						std::string statename;
+						if (index < (sizeof(c_stateName) / sizeof(*c_stateName)))
+						{
+							statename = c_stateName[index];
+						}
+						else
+						{
+							statename = "Unknown " + std::to_string(index);
+						}
+						valueString->OnValueRefreshed(statename);
 						valueString->Release();
-						Log::Write(LogLevel_Info, GetNodeId(), "Received thermostat operating state: %s", valueString->GetValue().c_str());
+						Log::Write(LogLevel_Info, GetNodeId(), "Received thermostat operating state: %s", statename);
 					}
 					return true;
 				}
