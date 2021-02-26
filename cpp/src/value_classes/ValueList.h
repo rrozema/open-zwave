@@ -52,46 +52,37 @@ namespace OpenZWave
 					 */
 					struct Item
 					{
-							string m_label;
-							int32 m_value;
+						string m_label;
+						int32 m_value;
 					};
 
-					ValueList(uint32 const _homeId, uint8 const _nodeId, ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint16 const _index, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, vector<Item> const& _items, int32 const _valueIdx, uint8 const _pollIntensity, uint8 const _size = 4);
+					ValueList(uint32 const _homeId, uint8 const _nodeId, ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint16 const _index, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, vector<Item> const& _items, int32 const _value, uint8 const _pollIntensity, uint8 const _size = 4);
 					ValueList();
 					virtual ~ValueList()
 					{
 					}
 
-					bool SetByLabel(string const& _label);
-					bool SetByValue(int32 const _value);
+					//ValueInt(uint32 const _homeId, uint8 const _nodeId, ValueID::ValueGenre const _genre, uint8 const _commandClassId, uint8 const _instance, uint16 const _index, string const& _label, string const& _units, bool const _readOnly, bool const _writeOnly, int32 const _value, uint8 const _pollIntensity);
+					//ValueInt();
+					//virtual ~ValueInt()
+					//{
+					//}
 
-					void OnValueRefreshed(int32 const _valueIdx);
-
-					// From Value
-					virtual string const GetAsString() const
-					{
-						const Item* item = GetItem();
-						if (item)
-							return GetItem()->m_label;
-						else
-							return "";
-					}
-					virtual bool SetFromString(string const& _value)
-					{
-						const Item* item = GetItem();
-						if (item)
-							return SetByLabel(_value);
-						return false;
-					}
+					bool Set(int32 const _value);
+					void OnValueRefreshed(int32 const _value);
 					void SetTargetValue(int32 const _target, uint32 _duration = 0);
 
+
+					// From Value
+					virtual string const GetAsString() const;
+					virtual bool SetFromString(string const& _value);
 					virtual void ReadXML(uint32 const _homeId, uint8 const _nodeId, uint8 const _commandClassId, TiXmlElement const* _valueElement);
 					virtual void WriteXML(TiXmlElement* _valueElement);
 
-					Item const* GetItem() const;
-
-					int32 GetItemIdxByLabel(string const& _label) const;
-					int32 GetItemIdxByValue(int32 const _value) const;
+					int32 GetValue() const
+					{
+						return m_value;
+					}
 
 					bool GetItemLabels(vector<string>* o_items);
 					bool GetItemValues(vector<int32>* o_values);
@@ -101,12 +92,55 @@ namespace OpenZWave
 						return m_size;
 					}
 
+					Item const* GetItem() const;
+
+
+
+
+					// Included for backwards compatibility.
+					// Do not use in new development.
+					bool SetByLabel(string const& _label);
+					bool SetByValue(uint32 const _index);
+
+					uint32 GetItemIdxByLabel(string const& _label) const;
+					uint32 GetItemIdxByValue(int32 const _value) const;
+
+					//void OnValueRefreshed(int32 const _valueIdx);
+
+					//// From Value
+					//virtual string const GetAsString() const
+					//{
+					//	const Item* item = GetItem();
+					//	if (item)
+					//		return GetItem()->m_label;
+					//	else
+					//		return "";
+					//}
+					//virtual bool SetFromString(string const& _value)
+					//{
+					//	const Item* item = GetItem();
+					//	if (item)
+					//		return SetByLabel(_value);
+					//	return false;
+					//}
+					//void SetTargetValue(int32 const _target, uint32 _duration = 0);
+
+					//virtual void ReadXML(uint32 const _homeId, uint8 const _nodeId, uint8 const _commandClassId, TiXmlElement const* _valueElement);
+					//virtual void WriteXML(TiXmlElement* _valueElement);
+
+
+
+
 				private:
 					vector<Item> m_items;
-					int32 m_valueIdx;					// the current index in the m_items vector
-					int32 m_valueIdxCheck;			// the previous index in the m_items vector (used for double-checking spurious value reads)
+					//int32 m_valueIdx;					// the current index in the m_items vector
+					//int32 m_valueIdxCheck;			// the previous index in the m_items vector (used for double-checking spurious value reads)
 					uint8 m_size;
-					int32 m_targetValue; 		// the Target Value, if the CC support it
+					//int32 m_targetValue; 		// the Target Value, if the CC support it
+
+					int32 m_value;				// the current value
+					int32 m_valueCheck;			// the previous value (used for double-checking spurious value reads)
+					int32 m_targetValue;		// Target Value 
 
 			};
 		} // namespace VC
