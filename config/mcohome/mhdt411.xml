@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Product xmlns='https://github.com/OpenZWave/open-zwave' Revision="3">
+<Product xmlns='https://github.com/OpenZWave/open-zwave' Revision="4">
   <!--MCOHome Touch Panel Dimmer Switch MH-DT411 
     type=d411, id=5102	Unknown: id=015f	0x5102	0xd411
   -->
@@ -18,6 +18,7 @@
       <Entry author="rrozema - richard@uitdelft.nl" date="16 November 2020" revision="1">Information retrieved from manual pages delivered with the product. No revision or date on the manual.</Entry>
       <Entry author="rrozema - richard@uitdelft.nl" date="18 November 2020" revision="2">Fixed option 17. Enabled and Disabled where interchanged.</Entry>
       <Entry author="rrozema - richard@uitdelft.nl" date="18 November 2020" revision="3">Fixed association group indexes. Was 1, 2, 5, 8. Now 1, 2, 3, 4.</Entry>
+      <Entry author="rrozema - richard@uitdelft.nl" date="16 March 2021" revision="4">Revision bump</Entry>
     </ChangeLog>
   </MetaData>
   
