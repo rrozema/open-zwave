@@ -621,6 +621,7 @@ bool Driver::ReadCache()
 	string filename = userPath + string(str);
 
 	TiXmlDocument doc;
+	doc.SetCondenseWhiteSpace(false);
 	if (!doc.LoadFile(filename.c_str(), TIXML_ENCODING_UTF8))
 	{
 		return false;
@@ -7093,6 +7094,7 @@ void Driver::ReloadNode(uint8 const _nodeId)
 	string filename = userPath + string(str);
 
 	TiXmlDocument doc;
+	doc.SetCondenseWhiteSpace(false);
 	if (doc.LoadFile(filename.c_str(), TIXML_ENCODING_UTF8))
 	{
 		doc.SetUserData((void *) filename.c_str());
